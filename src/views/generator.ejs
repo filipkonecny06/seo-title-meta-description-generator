@@ -1,0 +1,169 @@
+﻿<%- include('partials/head', { title }) %>
+<%- include('partials/header') %>
+
+<main class="generator-main" data-generator-page data-authenticated="<%= currentUser ? 'true' : 'false' %>">
+  <section class="workspace-grid">
+    <aside class="workspace-panel glass config-panel">
+      <h2>Configuration</h2>
+      <form id="generator-form">
+        <label>
+          Primary Keyword *
+          <input type="text" name="primaryKeyword" id="primaryKeyword" placeholder="e.g. project management software" required />
+        </label>
+
+        <label>
+          Secondary Keywords
+          <input type="text" name="secondaryKeywords" id="secondaryKeywords" placeholder="comma separated" />
+        </label>
+
+        <label>
+          Audience
+          <input type="text" name="audience" id="audience" placeholder="e.g. startups" />
+        </label>
+
+        <label>
+          Location
+          <input type="text" name="location" id="location" placeholder="e.g. New York" />
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox" name="includeYear" id="includeYear" checked />
+          Include Current Year
+        </label>
+
+        <label>
+          Search Intent
+          <select name="intent" id="intent">
+            <option value="informational">Informational</option>
+            <option value="commercial">Commercial</option>
+            <option value="transactional">Transactional</option>
+            <option value="navigational">Navigational</option>
+          </select>
+        </label>
+
+        <label>
+          Tone
+          <select name="tone" id="tone">
+            <option value="neutral">Neutral</option>
+            <option value="authoritative">Authoritative</option>
+            <option value="urgent">Urgent</option>
+            <option value="friendly">Friendly</option>
+          </select>
+        </label>
+
+        <label>
+          Title Style
+          <select name="titleStyle" id="titleStyle">
+            <option value="list">List</option>
+            <option value="how-to">How-to</option>
+            <option value="question">Question</option>
+            <option value="comparison">Comparison</option>
+            <option value="best/top">Best/Top</option>
+          </select>
+        </label>
+
+        <label>
+          Meta Style
+          <select name="metaStyle" id="metaStyle">
+            <option value="educational">Educational</option>
+            <option value="sales-focused">Sales-focused</option>
+            <option value="benefit-driven">Benefit-driven</option>
+          </select>
+        </label>
+
+        <label>
+          Length Profile
+          <select name="length" id="length">
+            <option value="short">Short</option>
+            <option value="medium" selected>Medium</option>
+            <option value="max ctr">Max CTR</option>
+          </select>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox" name="bulkMode" id="bulkMode" />
+          Bulk Mode (20 titles)
+        </label>
+
+        <div class="control-buttons">
+          <button type="button" class="btn" id="generate-btn">Generate</button>
+          <button type="button" class="btn subtle" id="download-btn">Download .txt</button>
+          <button type="button" class="btn subtle" id="export-btn">Export CSV</button>
+        </div>
+      </form>
+    </aside>
+
+    <section class="workspace-panel glass results-panel">
+      <div class="results-header">
+        <h2>Generated Variations</h2>
+        <div class="summary-badges" id="summary-badges">
+          <span class="pill">Ready</span>
+        </div>
+      </div>
+
+      <div class="results-toolbar">
+        <button type="button" class="btn small" id="save-generation-btn">Save Generation</button>
+        <span class="muted small-text"><%= currentUser ? 'Saved generations appear in History.' : 'Login to enable save and favorites.' %></span>
+      </div>
+
+      <div class="result-section">
+        <h3>Title Variations</h3>
+        <div class="card-list" id="title-results"></div>
+      </div>
+
+      <div class="result-section">
+        <h3>Meta Descriptions</h3>
+        <div class="card-list" id="meta-results"></div>
+      </div>
+
+      <div class="compare-panel hidden" id="compare-panel"></div>
+    </section>
+
+    <aside class="workspace-panel glass preview-panel">
+      <div class="preview-header">
+        <h2>Live SERP Preview</h2>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn active" data-device="desktop" id="desktop-toggle">Desktop</button>
+          <button type="button" class="toggle-btn" data-device="mobile" id="mobile-toggle">Mobile</button>
+        </div>
+      </div>
+
+      <div class="serp-card" id="serp-card">
+        <p class="serp-url" id="preview-url">https://www.yourdomain.com</p>
+        <h4 class="serp-title" id="preview-title">Generated title will appear here.</h4>
+        <p class="serp-meta" id="preview-meta">Generated meta description preview will appear here.</p>
+      </div>
+
+      <div class="progress-meters">
+        <div>
+          <div class="meter-head">
+            <span>Title Pixel Width</span>
+            <strong id="title-pixels">0 / 580px</strong>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill" id="title-progress"></div>
+          </div>
+          <p class="warning-text" id="title-warning"></p>
+        </div>
+
+        <div>
+          <div class="meter-head">
+            <span>Meta Pixel Width</span>
+            <strong id="meta-pixels">0 / 920px</strong>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill" id="meta-progress"></div>
+          </div>
+          <p class="warning-text" id="meta-warning"></p>
+        </div>
+      </div>
+
+      <div class="schema-box">
+        <h3>Schema-Ready Headlines</h3>
+        <ul id="schema-suggestions"></ul>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<%- include('partials/footer', { pageScript: '/js/generator.js' }) %>

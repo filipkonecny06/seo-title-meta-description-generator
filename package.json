@@ -1,0 +1,43 @@
+﻿{
+  "name": "seo-title-meta-generator",
+  "version": "1.0.0",
+  "description": "Production-ready deterministic SEO title and meta description generator SaaS",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "db:migrate": "sequelize-cli db:migrate --config src/config/sequelize-cli.cjs",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo --config src/config/sequelize-cli.cjs",
+    "db:seed": "sequelize-cli db:seed:all --config src/config/sequelize-cli.cjs",
+    "db:seed:undo": "sequelize-cli db:seed:undo:all --config src/config/sequelize-cli.cjs"
+  },
+  "keywords": [
+    "seo",
+    "saas",
+    "title-generator",
+    "meta-description"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "csurf": "^1.11.0",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-mysql-session": "^3.0.3",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.11.3",
+    "sequelize": "^6.37.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7",
+    "sequelize-cli": "^6.6.2"
+  }
+}

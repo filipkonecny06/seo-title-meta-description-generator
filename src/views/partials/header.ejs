@@ -1,0 +1,27 @@
+﻿<header class="site-header">
+  <a class="brand" href="/">
+    <span class="brand-mark"></span>
+    <span>Orbit Snippets</span>
+  </a>
+
+  <nav class="main-nav">
+    <a href="/" class="nav-link">Home</a>
+    <a href="/generator" class="nav-link">Generator</a>
+    <% if (currentUser) { %>
+      <a href="/history" class="nav-link">History</a>
+      <form action="/logout" method="POST" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button type="submit" class="btn subtle">Logout</button>
+      </form>
+    <% } else { %>
+      <a href="/login" class="nav-link">Login</a>
+      <a href="/register" class="btn small">Start Free</a>
+    <% } %>
+  </nav>
+</header>
+
+<% if (flash) { %>
+  <div class="flash flash-<%= flash.type %>" data-flash>
+    <span><%= flash.message %></span>
+  </div>
+<% } %>

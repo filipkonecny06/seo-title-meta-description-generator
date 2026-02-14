@@ -1,0 +1,56 @@
+﻿<%- include('partials/head', { title }) %>
+<%- include('partials/header') %>
+
+<main class="history-main">
+  <section class="glass history-section">
+    <h1>Generation History</h1>
+    <p class="muted">Most recent 30 saved generations.</p>
+
+    <% if (!historyRows.length) { %>
+      <p class="empty-state">No saved generations yet. Use the generator and click "Save Generation".</p>
+    <% } %>
+
+    <div class="history-list">
+      <% historyRows.forEach((row) => { %>
+        <article class="history-item">
+          <header>
+            <h3><%= row.primaryKeyword %></h3>
+            <span><%= new Date(row.createdAt).toLocaleString() %></span>
+          </header>
+          <p>
+            Intent: <strong><%= row.config.intent %></strong>
+            | Title Style: <strong><%= row.config.titleStyle %></strong>
+            | Meta Style: <strong><%= row.config.metaStyle %></strong>
+          </p>
+          <p>Saved Titles: <strong><%= row.titles.length %></strong> | Saved Metas: <strong><%= row.metas.length %></strong></p>
+          <% if (row.selectedTitle) { %>
+            <p class="muted">Selected: <%= row.selectedTitle %></p>
+          <% } %>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="glass history-section">
+    <h2>Favorite Titles</h2>
+
+    <% if (!favoriteRows.length) { %>
+      <p class="empty-state">No favorites saved yet.</p>
+    <% } %>
+
+    <div class="favorites-list">
+      <% favoriteRows.forEach((item) => { %>
+        <article class="favorite-item">
+          <h3><%= item.title %></h3>
+          <p><%= item.meta || 'No linked meta description' %></p>
+          <div class="favorite-meta">
+            <span class="pill"><%= item.badge %></span>
+            <span>CTR: <%= item.ctrScore %></span>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,34 @@
+﻿<%- include('partials/head', { title }) %>
+<%- include('partials/header') %>
+
+<main class="auth-main">
+  <section class="auth-card glass">
+    <h1>Create Account</h1>
+    <p>Save winning snippets and build a reusable SEO snippet library.</p>
+
+    <form action="/register" method="POST" class="auth-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <label>
+        Name
+        <input type="text" name="name" required />
+      </label>
+
+      <label>
+        Email
+        <input type="email" name="email" required />
+      </label>
+
+      <label>
+        Password
+        <input type="password" name="password" minlength="8" required />
+      </label>
+
+      <button type="submit" class="btn">Create Account</button>
+    </form>
+
+    <p class="muted">Already have an account? <a href="/login">Login</a></p>
+  </section>
+</main>
+
+<%- include('partials/footer') %>

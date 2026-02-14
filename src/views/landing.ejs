@@ -1,0 +1,124 @@
+﻿<%- include('partials/head', { title }) %>
+<%- include('partials/header') %>
+
+<main class="landing-main">
+  <section class="hero-panel glass">
+    <div class="hero-copy">
+      <p class="eyebrow">Production SEO Intelligence</p>
+      <h1>SEO Title & Meta Description Generator</h1>
+      <p>
+        Generate high-converting SERP snippets with deterministic templates, intent logic,
+        power-word scoring, and pixel-accurate previews.
+      </p>
+      <div class="hero-cta">
+        <a href="/generator" class="btn">Generate SEO Snippet</a>
+        <a href="#comparison" class="btn subtle">See Comparison</a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <strong>10 / 20</strong>
+          <span>Title variations</span>
+        </div>
+        <div>
+          <strong>5</strong>
+          <span>Meta descriptions</span>
+        </div>
+        <div>
+          <strong>0 API</strong>
+          <span>No LLM dependency</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-card glass">
+      <h3>What you get</h3>
+      <ul>
+        <li>Intent-based generation engine</li>
+        <li>CTR score with deterministic badge system</li>
+        <li>Character + pixel width validation</li>
+        <li>Google-style SERP desktop/mobile preview</li>
+        <li>Save history and favorites</li>
+        <li>Schema-ready headline output</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="feature-grid">
+    <article class="feature-card glass">
+      <h3>Intent-Based Formulas</h3>
+      <p>Match search intent directly using proven title and meta blueprints.</p>
+    </article>
+    <article class="feature-card glass">
+      <h3>CTR Scoring</h3>
+      <p>Deterministic score from keyword position, power words, length, and year usage.</p>
+    </article>
+    <article class="feature-card glass">
+      <h3>Pixel Preview</h3>
+      <p>Desktop/mobile pixel-width analysis with truncation alerts before publishing.</p>
+    </article>
+    <article class="feature-card glass">
+      <h3>Schema-Ready Output</h3>
+      <p>Headline suggestions ready for structured data pipelines and editorial workflows.</p>
+    </article>
+    <article class="feature-card glass">
+      <h3>Save & History</h3>
+      <p>Persist winning variants, compare score changes, and reuse proven snippets fast.</p>
+    </article>
+    <article class="feature-card glass">
+      <h3>Bulk Generation</h3>
+      <p>Switch to bulk mode and generate 20 deterministic title candidates instantly.</p>
+    </article>
+  </section>
+
+  <section id="comparison" class="comparison glass">
+    <h2>Manual Writing vs Orbit Snippets</h2>
+    <div class="comparison-grid">
+      <div>
+        <h4>Manual Process</h4>
+        <ul>
+          <li>Slow and inconsistent</li>
+          <li>No pixel validation</li>
+          <li>Subjective quality decisions</li>
+          <li>No repeatable scoring rubric</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Orbit Snippets Workflow</h4>
+        <ul>
+          <li>Deterministic and repeatable output</li>
+          <li>Pixel + character checks by default</li>
+          <li>Intent and tone controls</li>
+          <li>Built-in CTR score + favorites system</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq-section glass">
+    <h2>FAQ</h2>
+    <div class="faq-list">
+      <% faqItems.forEach((item) => { %>
+        <details>
+          <summary><%= item.question %></summary>
+          <p><%= item.answer %></p>
+        </details>
+      <% }) %>
+    </div>
+  </section>
+</main>
+
+<script type="application/ld+json">
+<%- JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqItems.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
+}) %>
+</script>
+
+<%- include('partials/footer') %>
