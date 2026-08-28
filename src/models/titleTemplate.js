@@ -1,4 +1,4 @@
-﻿const { DataTypes, Model } = require('sequelize');
+﻿const { DataTypes, Model } = require("sequelize");
 
 module.exports = (sequelize) => {
   class TitleTemplate extends Model {}
@@ -30,13 +30,10 @@ module.exports = (sequelize) => {
     },
     {
       sequelize,
-      modelName: 'TitleTemplate',
-      tableName: 'title_templates',
-      indexes: [
-        { fields: ['intent'] },
-        { fields: ['style'] },
-      ],
-    }
+      modelName: "TitleTemplate",
+      tableName: "title_templates",
+      indexes: [{ fields: ["intent"] }, { fields: ["style"] }],
+    },
   );
 
   return TitleTemplate;

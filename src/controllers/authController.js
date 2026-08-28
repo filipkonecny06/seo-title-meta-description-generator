@@ -1,96 +1,124 @@
-﻿const bcrypt = require('bcrypt');
-const { User } = require('../models');
+const bcrypt = require("bcrypt");
+const { loginSchema, registerSchema } = require("../validation/schemas");
 
-const setFlash = (req, type, message) => {
-  req.session.flash = { type, message };
-};
+const regenerateSession = (req) =>
+  new Promise((resolve, reject) => {
+    req.session.regenerate((error) => (error ? reject(error) : resolve()));
+  });
 
-const register = async (req, res, next) => {
-  try {
-    const name = String(req.body.name || '').trim();
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '');
+const saveSession = (req) =>
+  new Promise((resolve, reject) => {
+    req.session.save((error) => (error ? reject(error) : resolve()));
+  });
 
-    if (!name || !email || password.length < 8) {
-      setFlash(req, 'warning', 'Use a valid name, email, and password (min 8 chars).');
-      return res.redirect('/register');
-    }
+const destroySession = (req) =>
+  new Promise((resolve, reject) => {
+    req.session.destroy((error) => (error ? reject(error) : resolve()));
+  });
 
-    const exists = await User.findOne({ where: { email } });
-    if (exists) {
-      setFlash(req, 'warning', 'An account with that email already exists.');
-      return res.redirect('/register');
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ name, email, passwordHash });
-
-    req.session.userId = user.id;
-    req.session.user = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    };
-
-    setFlash(req, 'success', 'Account created. You are now signed in.');
-    return res.redirect('/generator');
-  } catch (error) {
-    return next(error);
+class AuthController {
+  constructor({ User, sessionCookieName }) {
+    this.User = User;
+    this.sessionCookieName = sessionCookieName;
+    this.register = this.register.bind(this);
+    this.login = this.login.bind(this);
+    this.logout = this.logout.bind(this);
   }
-};
 
-const login = async (req, res, next) => {
-  try {
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '');
-
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      setFlash(req, 'warning', 'Invalid email or password.');
-      return res.redirect('/login');
-    }
-
-    const valid = await user.validatePassword(password);
-    if (!valid) {
-      setFlash(req, 'warning', 'Invalid email or password.');
-      return res.redirect('/login');
-    }
-
-    req.session.userId = user.id;
-    req.session.user = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    };
-
-    setFlash(req, 'success', `Welcome back, ${user.name}.`);
-    return res.redirect('/generator');
-  } catch (error) {
-    return next(error);
+  setFlash(req, type, message) {
+    req.session.flash = { type, message };
   }
-};
 
-const logout = async (req, res, next) => {
-  try {
-    await new Promise((resolve, reject) => {
-      req.session.destroy((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve();
+  async establishSession(req, user, message) {
+    await regenerateSession(req);
+    req.session.userId = user.id;
+    req.session.user = { id: user.id, name: user.name, email: user.email };
+    this.setFlash(req, "success", message);
+    await saveSession(req);
+  }
+
+  async register(req, res, next) {
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) {
+      this.setFlash(
+        req,
+        "warning",
+        "Use a valid name, email, and password (10–72 bytes).",
+      );
+      return res.redirect("/register");
+    }
+
+    try {
+      const { name, email, password } = parsed.data;
+      const exists = await this.User.findOne({ where: { email } });
+      if (exists) {
+        this.setFlash(
+          req,
+          "warning",
+          "An account with that email already exists.",
+        );
+        return res.redirect("/register");
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12);
+      const user = await this.User.create({ name, email, passwordHash });
+      await this.establishSession(
+        req,
+        user,
+        "Account created. You are now signed in.",
+      );
+      return res.redirect("/generator");
+    } catch (error) {
+      if (error.name === "SequelizeUniqueConstraintError") {
+        this.setFlash(
+          req,
+          "warning",
+          "An account with that email already exists.",
+        );
+        return res.redirect("/register");
+      }
+      return next(error);
+    }
+  }
+
+  async login(req, res, next) {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      this.setFlash(req, "warning", "Invalid email or password.");
+      return res.redirect("/login");
+    }
+
+    try {
+      const user = await this.User.findOne({
+        where: { email: parsed.data.email },
       });
-    });
+      const valid = user
+        ? await user.validatePassword(parsed.data.password)
+        : false;
+      if (!valid) {
+        this.setFlash(req, "warning", "Invalid email or password.");
+        return res.redirect("/login");
+      }
 
-    res.clearCookie('seo.sid');
-    return res.redirect('/');
-  } catch (error) {
-    return next(error);
+      await this.establishSession(req, user, `Welcome back, ${user.name}.`);
+      return res.redirect("/generator");
+    } catch (error) {
+      return next(error);
+    }
   }
-};
 
-module.exports = {
-  register,
-  login,
-  logout,
-};
+  async logout(req, res, next) {
+    try {
+      await destroySession(req);
+      res.clearCookie(this.sessionCookieName, {
+        httpOnly: true,
+        sameSite: "lax",
+      });
+      return res.redirect("/");
+    } catch (error) {
+      return next(error);
+    }
+  }
+}
+
+module.exports = { AuthController, regenerateSession };

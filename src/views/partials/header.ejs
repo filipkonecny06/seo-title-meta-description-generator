@@ -4,11 +4,11 @@
     <span>Orbit Snippets</span>
   </a>
 
-  <nav class="main-nav">
-    <a href="/" class="nav-link">Home</a>
-    <a href="/generator" class="nav-link">Generator</a>
+  <nav class="main-nav" aria-label="Primary navigation">
+    <a href="/" class="nav-link" <% if (currentPath === '/') { %>aria-current="page"<% } %>>Home</a>
+    <a href="/generator" class="nav-link" <% if (currentPath === '/generator') { %>aria-current="page"<% } %>>Generator</a>
     <% if (currentUser) { %>
-      <a href="/history" class="nav-link">History</a>
+      <a href="/history" class="nav-link" <% if (currentPath === '/history') { %>aria-current="page"<% } %>>History</a>
       <form action="/logout" method="POST" class="inline-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
         <button type="submit" class="btn subtle">Logout</button>
@@ -21,7 +21,7 @@
 </header>
 
 <% if (flash) { %>
-  <div class="flash flash-<%= flash.type %>" data-flash>
+  <div class="flash flash-<%= flash.type %>" data-flash role="<%= flash.type === 'warning' ? 'alert' : 'status' %>">
     <span><%= flash.message %></span>
   </div>
 <% } %>

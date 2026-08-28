@@ -1,14 +1,15 @@
-﻿const express = require('express');
-const apiController = require('../controllers/apiController');
-const { requireApiAuth } = require('../middleware/auth');
+const express = require("express");
+const { requireApiAuth } = require("../middleware/auth");
 
-const router = express.Router();
+const createApiRouter = (controller) => {
+  const router = express.Router();
+  router.post("/generate", controller.generate);
+  router.post("/preview", controller.preview);
+  router.post("/save", requireApiAuth, controller.save);
+  router.post("/favorites", requireApiAuth, controller.favorite);
+  router.get("/templates", controller.templates);
+  router.get("/history", requireApiAuth, controller.history);
+  return router;
+};
 
-router.post('/generate', apiController.generate);
-router.post('/preview', apiController.preview);
-router.post('/save', requireApiAuth, apiController.save);
-router.post('/favorite/:id', requireApiAuth, apiController.favorite);
-router.get('/templates', apiController.templates);
-router.get('/history', requireApiAuth, apiController.history);
-
-module.exports = router;
+module.exports = { createApiRouter };

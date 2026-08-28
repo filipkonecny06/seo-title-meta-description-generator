@@ -1,7 +1,7 @@
 ﻿<%- include('partials/head', { title }) %>
 <%- include('partials/header') %>
 
-<main class="auth-main">
+<main class="auth-main" id="main-content">
   <section class="auth-card glass">
     <h1>Login</h1>
     <p>Access saved generations, favorites, and export history.</p>
@@ -11,12 +11,12 @@
 
       <label>
         Email
-        <input type="email" name="email" required />
+        <input type="email" name="email" autocomplete="email" maxlength="180" required />
       </label>
 
       <label>
         Password
-        <input type="password" name="password" minlength="8" required />
+        <input type="password" name="password" autocomplete="current-password" maxlength="72" required />
       </label>
 
       <button type="submit" class="btn">Sign In</button>

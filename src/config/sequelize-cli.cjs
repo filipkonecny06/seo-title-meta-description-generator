@@ -1,7 +1,7 @@
-﻿const path = require('path');
-const dotenv = require('dotenv');
+﻿const path = require("path");
+const dotenv = require("dotenv");
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const base = {
   username: process.env.DB_USER,
@@ -9,7 +9,18 @@ const base = {
   database: process.env.DB_NAME,
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 3306),
-  dialect: 'mysql',
+  dialect: "mysql",
+  dialectOptions:
+    String(process.env.DB_SSL).toLowerCase() === "true"
+      ? {
+          ssl: {
+            require: true,
+            rejectUnauthorized:
+              String(process.env.DB_SSL_REJECT_UNAUTHORIZED).toLowerCase() !==
+              "false",
+          },
+        }
+      : undefined,
 };
 
 module.exports = {
@@ -20,11 +31,5 @@ module.exports = {
   },
   production: {
     ...base,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false,
-      },
-    },
   },
 };

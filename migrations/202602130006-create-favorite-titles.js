@@ -1,8 +1,8 @@
-﻿'use strict';
+﻿"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('favorite_titles', {
+    await queryInterface.createTable("favorite_titles", {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -13,21 +13,21 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'users',
-          key: 'id',
+          model: "users",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       generationHistoryId: {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'generation_histories',
-          key: 'id',
+          model: "generation_histories",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
       },
       title: {
         type: Sequelize.STRING(255),
@@ -45,7 +45,7 @@ module.exports = {
       badge: {
         type: Sequelize.STRING(24),
         allowNull: false,
-        defaultValue: 'Weak',
+        defaultValue: "Weak",
       },
       createdAt: {
         allowNull: false,
@@ -57,16 +57,16 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('favorite_titles', ['userId'], {
-      name: 'favorite_titles_user_idx',
+    await queryInterface.addIndex("favorite_titles", ["userId"], {
+      name: "favorite_titles_user_idx",
     });
 
-    await queryInterface.addIndex('favorite_titles', ['generationHistoryId'], {
-      name: 'favorite_titles_history_idx',
+    await queryInterface.addIndex("favorite_titles", ["generationHistoryId"], {
+      name: "favorite_titles_history_idx",
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('favorite_titles');
+    await queryInterface.dropTable("favorite_titles");
   },
 };

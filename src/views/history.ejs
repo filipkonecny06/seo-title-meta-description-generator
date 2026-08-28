@@ -1,7 +1,7 @@
 ﻿<%- include('partials/head', { title }) %>
 <%- include('partials/header') %>
 
-<main class="history-main">
+<main class="history-main" id="main-content">
   <section class="glass history-section">
     <h1>Generation History</h1>
     <p class="muted">Most recent 30 saved generations.</p>
@@ -45,7 +45,7 @@
           <p><%= item.meta || 'No linked meta description' %></p>
           <div class="favorite-meta">
             <span class="pill"><%= item.badge %></span>
-            <span>CTR: <%= item.ctrScore %></span>
+            <span>Optimization score: <%= item.optimizationScore %></span>
           </div>
         </article>
       <% }) %>

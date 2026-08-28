@@ -1,158 +1,128 @@
-﻿const { fn, col } = require('sequelize');
+const { AppError } = require("../errors/AppError");
 const {
-  TitleTemplate,
-  MetaTemplate,
-  PowerWord,
-  GenerationHistory,
-  FavoriteTitle,
-} = require('../models');
-const { generateSnippets } = require('../services/generatorService');
-const { buildPreview } = require('../services/serpService');
+  favoriteSchema,
+  generationInputSchema,
+  previewInputSchema,
+  saveGenerationSchema,
+} = require("../validation/schemas");
 
-const generate = async (req, res, next) => {
+const parseJsonColumn = (value) => {
+  if (typeof value !== "string") return value;
   try {
-    const primaryKeyword = String(req.body.primaryKeyword || '').trim();
-    if (!primaryKeyword) {
-      return res.status(400).json({ error: 'Primary keyword is required.' });
-    }
-
-    const payload = await generateSnippets(req.body, {
-      TitleTemplate,
-      MetaTemplate,
-      PowerWord,
-    });
-
-    return res.json({
-      data: payload,
-    });
-  } catch (error) {
-    return next(error);
+    return JSON.parse(value);
+  } catch {
+    return null;
   }
 };
 
-const preview = async (req, res, next) => {
-  try {
-    const previewData = buildPreview({
-      title: req.body.title,
-      meta: req.body.meta,
-      url: req.body.url,
-      primaryKeyword: req.body.primaryKeyword,
-      secondaryKeywords: req.body.secondaryKeywords,
-      device: req.body.device,
-    });
-
-    return res.json({ data: previewData });
-  } catch (error) {
-    return next(error);
+class ApiController {
+  constructor({ models, snippetGenerator, previewBuilder, catalogRepository }) {
+    this.models = models;
+    this.snippetGenerator = snippetGenerator;
+    this.previewBuilder = previewBuilder;
+    this.catalogRepository = catalogRepository;
+    this.generate = this.generate.bind(this);
+    this.preview = this.preview.bind(this);
+    this.save = this.save.bind(this);
+    this.favorite = this.favorite.bind(this);
+    this.templates = this.templates.bind(this);
+    this.history = this.history.bind(this);
   }
-};
 
-const save = async (req, res, next) => {
-  try {
-    const primaryKeyword = String(req.body.primaryKeyword || '').trim();
-    const config = req.body.config;
-    const titles = req.body.titles;
-    const metas = req.body.metas;
+  async generate(req, res) {
+    const input = generationInputSchema.parse(req.body);
+    const payload = await this.snippetGenerator.generate(input);
+    return res.json({ data: payload });
+  }
 
-    if (!primaryKeyword || !config || !Array.isArray(titles) || !Array.isArray(metas)) {
-      return res.status(400).json({ error: 'Invalid payload for save.' });
-    }
+  preview(req, res) {
+    const input = previewInputSchema.parse(req.body);
+    return res.json({ data: this.previewBuilder.build(input) });
+  }
 
-    const row = await GenerationHistory.create({
+  async save(req, res) {
+    const input = saveGenerationSchema.parse(req.body);
+    const generated = await this.snippetGenerator.generate(input.config);
+    const selectedTitle = generated.titles.find(
+      (item) => item.id === input.selectedTitleId,
+    );
+    const selectedMeta = generated.metas.find(
+      (item) => item.id === input.selectedMetaId,
+    );
+    const row = await this.models.GenerationHistory.create({
       userId: req.session.userId,
-      primaryKeyword,
-      config,
-      titles,
-      metas,
-      selectedTitle: req.body.selectedTitle || null,
-      selectedMeta: req.body.selectedMeta || null,
+      primaryKeyword: generated.config.primaryKeyword,
+      config: generated.config,
+      titles: generated.titles,
+      metas: generated.metas,
+      selectedTitle: selectedTitle?.text || null,
+      selectedMeta: selectedMeta?.text || null,
     });
 
     return res.status(201).json({
-      message: 'Generation saved.',
+      message: "Generation saved.",
       generationHistoryId: row.id,
     });
-  } catch (error) {
-    return next(error);
   }
-};
 
-const favorite = async (req, res, next) => {
-  try {
-    const generationHistoryId = Number(req.params.id || 0);
-    const title = String(req.body.title || '').trim();
-    const meta = String(req.body.meta || '').trim();
-    const ctrScore = Number(req.body.ctrScore || 0);
-    const badge = String(req.body.badge || 'Weak').trim();
-
-    if (!title) {
-      return res.status(400).json({ error: 'Title is required for favorite.' });
+  async favorite(req, res) {
+    const input = favoriteSchema.parse(req.body);
+    const history = await this.models.GenerationHistory.findOne({
+      where: { id: input.generationHistoryId, userId: req.session.userId },
+    });
+    if (!history) {
+      throw new AppError(
+        404,
+        "Saved generation not found.",
+        "HISTORY_NOT_FOUND",
+      );
     }
 
-    const row = await FavoriteTitle.create({
+    const titles = parseJsonColumn(history.titles) || [];
+    const metas = parseJsonColumn(history.metas) || [];
+    const items = input.type === "title" ? titles : metas;
+    const item = items.find((entry) => entry.id === input.itemId);
+    if (!item) {
+      throw new AppError(
+        400,
+        "Favorite item does not belong to that generation.",
+        "INVALID_FAVORITE",
+      );
+    }
+
+    const row = await this.models.FavoriteTitle.create({
       userId: req.session.userId,
-      generationHistoryId: generationHistoryId > 0 ? generationHistoryId : null,
-      title,
-      meta,
-      ctrScore,
-      badge,
+      generationHistoryId: history.id,
+      title:
+        input.type === "title"
+          ? item.text
+          : history.selectedTitle || titles[0]?.text,
+      meta:
+        input.type === "meta"
+          ? item.text
+          : history.selectedMeta || metas[0]?.text || null,
+      optimizationScore: item.optimizationScore,
+      badge: item.badge,
     });
 
-    return res.status(201).json({
-      message: 'Favorite saved.',
-      favoriteId: row.id,
-    });
-  } catch (error) {
-    return next(error);
+    return res
+      .status(201)
+      .json({ message: "Favorite saved.", favoriteId: row.id });
   }
-};
 
-const templates = async (req, res, next) => {
-  try {
-    const [titleCount, metaCount, powerCount, titleIntentSummary] = await Promise.all([
-      TitleTemplate.count(),
-      MetaTemplate.count(),
-      PowerWord.count(),
-      TitleTemplate.findAll({
-        attributes: ['intent', [fn('COUNT', col('id')), 'count']],
-        group: ['intent'],
-        raw: true,
-      }),
-    ]);
-
-    return res.json({
-      data: {
-        titleCount,
-        metaCount,
-        powerCount,
-        titleIntentSummary,
-      },
-    });
-  } catch (error) {
-    return next(error);
+  templates(req, res) {
+    return res.json({ data: this.catalogRepository.getSummary() });
   }
-};
 
-const history = async (req, res, next) => {
-  try {
-    const rows = await GenerationHistory.findAll({
+  async history(req, res) {
+    const rows = await this.models.GenerationHistory.findAll({
       where: { userId: req.session.userId },
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
       limit: 50,
       raw: true,
     });
-
     return res.json({ data: rows });
-  } catch (error) {
-    return next(error);
   }
-};
+}
 
-module.exports = {
-  generate,
-  preview,
-  save,
-  favorite,
-  templates,
-  history,
-};
+module.exports = { ApiController, parseJsonColumn };

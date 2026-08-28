@@ -1,107 +1,86 @@
-﻿const { FavoriteTitle, GenerationHistory } = require('../models');
-
 const landingFaq = [
   {
-    question: 'How is this different from AI copy tools?',
+    question: "How is this different from AI copy tools?",
     answer:
-      'This platform uses deterministic SEO formulas and ranking heuristics. You get consistent output, repeatable strategy, and no token costs.',
+      "It uses version-controlled templates and transparent heuristics, so output is repeatable and has no model or token dependency.",
   },
   {
-    question: 'Do I need an API key?',
-    answer: 'No. The generator is fully logic-based with template and scoring libraries stored in your own database.',
-  },
-  {
-    question: 'What character length is best for titles?',
+    question: "Does the score predict click-through rate?",
     answer:
-      'Most high-performing SEO titles fall between 50 and 60 characters. This app scores and validates both character and pixel width.',
+      "No. It is an explainable optimization heuristic for comparing drafts, not an empirical CTR forecast.",
   },
   {
-    question: 'How does CTR score work?',
+    question: "Are SERP widths exact?",
     answer:
-      'Score combines deterministic factors like number usage, year usage, power words, keyword placement, and intent signal match.',
+      "No preview can guarantee Google rendering. Orbit estimates width consistently and flags likely truncation for review.",
   },
   {
-    question: 'Can anonymous users generate snippets?',
-    answer: 'Yes. Anyone can generate. Login is required only for saving favorites and generation history.',
-  },
-  {
-    question: 'Does it support local SEO?',
+    question: "Can I edit the writing rules?",
     answer:
-      'Yes. Include location input to inject city/region modifiers in formula templates and preview local SERP-focused variations.',
+      "Yes. Templates and weighted words live in one validated JSON catalog that can be reviewed and synchronized manually.",
   },
   {
-    question: 'Can I export generated snippets?',
-    answer: 'Yes. You can instantly download .txt output and export CSV from the generator workspace.',
-  },
-  {
-    question: 'Is schema output supported?',
+    question: "Can anonymous users generate snippets?",
     answer:
-      'Yes. The generator returns headline-ready title suggestions you can map directly to structured data fields.',
+      "Yes. Login is needed only to save generation history or favorites.",
+  },
+  {
+    question: "Does it support local SEO?",
+    answer:
+      "Yes. Add a location to generate locally focused variants and preview the result.",
   },
 ];
 
-const renderLanding = (req, res) => {
-  res.render('landing', {
-    title: 'SEO Title & Meta Description Generator',
-    faqItems: landingFaq,
-  });
-};
-
-const renderGenerator = (req, res) => {
-  res.render('generator', {
-    title: 'Generator Workspace',
-  });
-};
-
-const renderLogin = (req, res) => {
-  if (req.session.userId) {
-    return res.redirect('/generator');
+class PageController {
+  constructor({ models }) {
+    this.models = models;
+    this.renderLanding = this.renderLanding.bind(this);
+    this.renderGenerator = this.renderGenerator.bind(this);
+    this.renderLogin = this.renderLogin.bind(this);
+    this.renderRegister = this.renderRegister.bind(this);
+    this.renderHistory = this.renderHistory.bind(this);
   }
 
-  return res.render('login', {
-    title: 'Login',
-  });
-};
-
-const renderRegister = (req, res) => {
-  if (req.session.userId) {
-    return res.redirect('/generator');
+  renderLanding(req, res) {
+    return res.render("landing", {
+      title: "SEO Title & Meta Description Generator",
+      faqItems: landingFaq,
+    });
   }
 
-  return res.render('register', {
-    title: 'Create Account',
-  });
-};
+  renderGenerator(req, res) {
+    return res.render("generator", { title: "Generator Workspace" });
+  }
 
-const renderHistory = async (req, res, next) => {
-  try {
+  renderLogin(req, res) {
+    if (req.session.userId) return res.redirect("/generator");
+    return res.render("login", { title: "Login" });
+  }
+
+  renderRegister(req, res) {
+    if (req.session.userId) return res.redirect("/generator");
+    return res.render("register", { title: "Create Account" });
+  }
+
+  async renderHistory(req, res) {
     const [historyRows, favoriteRows] = await Promise.all([
-      GenerationHistory.findAll({
+      this.models.GenerationHistory.findAll({
         where: { userId: req.session.userId },
-        order: [['createdAt', 'DESC']],
+        order: [["createdAt", "DESC"]],
         limit: 30,
       }),
-      FavoriteTitle.findAll({
+      this.models.FavoriteTitle.findAll({
         where: { userId: req.session.userId },
-        order: [['createdAt', 'DESC']],
+        order: [["createdAt", "DESC"]],
         limit: 30,
       }),
     ]);
-
-    return res.render('history', {
-      title: 'Saved History',
+    return res.render("history", {
+      title: "Saved History",
       historyRows,
       favoriteRows,
     });
-  } catch (error) {
-    return next(error);
   }
-};
+}
 
-module.exports = {
-  renderLanding,
-  renderGenerator,
-  renderLogin,
-  renderRegister,
-  renderHistory,
-};
+module.exports = { PageController, landingFaq };

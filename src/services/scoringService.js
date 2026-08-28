@@ -1,93 +1,111 @@
-﻿const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 const INTENT_SIGNAL_MAP = {
-  informational: ['how', 'guide', 'tips', 'learn', 'tutorial'],
-  commercial: ['best', 'top', 'review', 'compare', 'vs'],
-  transactional: ['buy', 'pricing', 'deal', 'book', 'order'],
-  navigational: ['official', 'login', 'near me', 'website', 'dashboard'],
+  informational: ["how", "guide", "tips", "learn", "tutorial"],
+  commercial: ["best", "top", "review", "compare", "versus", "vs"],
+  transactional: ["buy", "pricing", "deal", "book", "order"],
+  navigational: ["official", "login", "near me", "website", "dashboard"],
+};
+
+const OPTIMAL_LENGTHS = {
+  title: { min: 50, max: 60 },
+  meta: { min: 140, max: 160 },
+};
+
+const escapeRegExp = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const phrasePattern = (phrase, { startsWith = false } = {}) => {
+  const escaped = escapeRegExp(phrase.trim()).replace(/\s+/g, "\\s+");
+  const prefix = startsWith ? "^" : "(^|[^\\p{L}\\p{N}])";
+  return new RegExp(`${prefix}${escaped}(?=$|[^\\p{L}\\p{N}])`, "iu");
 };
 
 const hasNumber = (text) => /\b\d+\b/.test(text);
-const hasYear = (text) => /\b(19|20)\d{2}\b/.test(text);
+const hasYear = (text) => /\b(?:19|20)\d{2}\b/.test(text);
 
-const countPowerWords = (text, powerWords) => {
-  if (!Array.isArray(powerWords) || !powerWords.length) {
+const findPowerWords = (text, powerWords) => {
+  if (!Array.isArray(powerWords)) {
     return [];
   }
 
-  const lowered = text.toLowerCase();
-  return powerWords.filter((powerWord) => {
-    const word = String(powerWord.word || powerWord).toLowerCase().trim();
-    if (!word) {
-      return false;
-    }
-    const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i');
-    return regex.test(lowered);
+  return powerWords.filter((entry) => {
+    const word = String(entry.word || entry).trim();
+    return word && phrasePattern(word).test(text);
   });
 };
 
-const hasIntentSignal = (text, intent) => {
-  const signals = INTENT_SIGNAL_MAP[intent] || [];
-  const lowered = text.toLowerCase();
-  return signals.some((signal) => lowered.includes(signal));
-};
+const hasIntentSignal = (text, intent) =>
+  (INTENT_SIGNAL_MAP[intent] || []).some((signal) =>
+    phrasePattern(signal).test(text),
+  );
 
 const clampScore = (value) => Math.max(0, Math.min(100, Math.round(value)));
 
 const resolveBadge = (score) => {
-  if (score >= 90) {
-    return 'Elite';
-  }
-  if (score >= 75) {
-    return 'Strong';
-  }
-  if (score >= 60) {
-    return 'Good';
-  }
-  return 'Weak';
+  if (score >= 90) return "Elite";
+  if (score >= 75) return "Strong";
+  if (score >= 60) return "Good";
+  return "Developing";
 };
 
-const calculateCTRScore = (text, options = {}) => {
-  const safeText = String(text || '');
-  const normalizedText = safeText.trim();
-  const primaryKeyword = String(options.primaryKeyword || '').toLowerCase().trim();
-  const intent = String(options.intent || '').toLowerCase().trim();
+class OptimizationScorer {
+  score(text, options = {}) {
+    const normalizedText = String(text || "").trim();
+    const primaryKeyword = String(options.primaryKeyword || "").trim();
+    const intent = String(options.intent || "")
+      .toLowerCase()
+      .trim();
+    const contentType = options.contentType === "meta" ? "meta" : "title";
+    const optimalLength = OPTIMAL_LENGTHS[contentType];
+    const matchedPowerWords = findPowerWords(
+      normalizedText,
+      options.powerWords || [],
+    );
 
-  let score = 20;
+    const breakdown = {
+      baseline: 20,
+      number: hasNumber(normalizedText) ? 10 : 0,
+      year: hasYear(normalizedText) ? 8 : 0,
+      powerWords: Math.min(
+        20,
+        matchedPowerWords.reduce((total, entry) => {
+          const weight = Number(entry.weight || 1);
+          return total + Math.max(1, Math.min(5, weight)) * 2;
+        }, 0),
+      ),
+      optimalLength:
+        normalizedText.length >= optimalLength.min &&
+        normalizedText.length <= optimalLength.max
+          ? 15
+          : 0,
+      keywordFirst:
+        primaryKeyword &&
+        phrasePattern(primaryKeyword, { startsWith: true }).test(normalizedText)
+          ? 10
+          : 0,
+      intentSignal: intent && hasIntentSignal(normalizedText, intent) ? 10 : 0,
+    };
 
-  if (hasNumber(normalizedText)) {
-    score += 10;
+    const score = clampScore(
+      Object.values(breakdown).reduce((total, value) => total + value, 0),
+    );
+
+    return {
+      score,
+      badge: resolveBadge(score),
+      breakdown,
+      matchedPowerWords: matchedPowerWords.map((entry) =>
+        String(entry.word || entry),
+      ),
+    };
   }
+}
 
-  if (hasYear(normalizedText)) {
-    score += 8;
-  }
-
-  const matchedPowerWords = countPowerWords(normalizedText, options.powerWords || []);
-  score += matchedPowerWords.length * 5;
-
-  if (normalizedText.length >= 50 && normalizedText.length <= 60) {
-    score += 15;
-  }
-
-  if (primaryKeyword && normalizedText.toLowerCase().startsWith(primaryKeyword)) {
-    score += 10;
-  }
-
-  if (intent && hasIntentSignal(normalizedText, intent)) {
-    score += 10;
-  }
-
-  const finalScore = clampScore(score);
-
-  return {
-    score: finalScore,
-    badge: resolveBadge(finalScore),
-    matchedPowerWords: matchedPowerWords.map((entry) => entry.word || entry),
-  };
-};
+const calculateOptimizationScore = (text, options) =>
+  new OptimizationScorer().score(text, options);
 
 module.exports = {
-  calculateCTRScore,
+  OptimizationScorer,
+  calculateOptimizationScore,
+  hasIntentSignal,
   resolveBadge,
 };

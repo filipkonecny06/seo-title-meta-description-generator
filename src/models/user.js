@@ -1,5 +1,5 @@
-﻿const bcrypt = require('bcrypt');
-const { DataTypes, Model } = require('sequelize');
+﻿const bcrypt = require("bcrypt");
+const { DataTypes, Model } = require("sequelize");
 
 module.exports = (sequelize) => {
   class User extends Model {
@@ -34,15 +34,15 @@ module.exports = (sequelize) => {
       role: {
         type: DataTypes.STRING(30),
         allowNull: false,
-        defaultValue: 'user',
+        defaultValue: "user",
       },
     },
     {
       sequelize,
-      modelName: 'User',
-      tableName: 'users',
-      indexes: [{ unique: true, fields: ['email'] }],
-    }
+      modelName: "User",
+      tableName: "users",
+      indexes: [{ unique: true, fields: ["email"] }],
+    },
   );
 
   return User;

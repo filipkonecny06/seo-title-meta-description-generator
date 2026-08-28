@@ -1,4 +1,4 @@
-﻿const { DataTypes, Model } = require('sequelize');
+﻿const { DataTypes, Model } = require("sequelize");
 
 module.exports = (sequelize) => {
   class GenerationHistory extends Model {}
@@ -41,13 +41,10 @@ module.exports = (sequelize) => {
     },
     {
       sequelize,
-      modelName: 'GenerationHistory',
-      tableName: 'generation_histories',
-      indexes: [
-        { fields: ['userId'] },
-        { fields: ['createdAt'] },
-      ],
-    }
+      modelName: "GenerationHistory",
+      tableName: "generation_histories",
+      indexes: [{ fields: ["userId"] }, { fields: ["createdAt"] }],
+    },
   );
 
   return GenerationHistory;
