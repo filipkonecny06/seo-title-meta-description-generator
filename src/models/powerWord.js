@@ -1,4 +1,4 @@
-﻿const { DataTypes, Model } = require('sequelize');
+﻿const { DataTypes, Model } = require("sequelize");
 
 module.exports = (sequelize) => {
   class PowerWord extends Model {}
@@ -27,13 +27,10 @@ module.exports = (sequelize) => {
     },
     {
       sequelize,
-      modelName: 'PowerWord',
-      tableName: 'power_words',
-      indexes: [
-        { fields: ['category'] },
-        { unique: true, fields: ['word'] },
-      ],
-    }
+      modelName: "PowerWord",
+      tableName: "power_words",
+      indexes: [{ fields: ["category"] }, { unique: true, fields: ["word"] }],
+    },
   );
 
   return PowerWord;

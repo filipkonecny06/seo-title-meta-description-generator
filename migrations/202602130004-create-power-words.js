@@ -1,8 +1,8 @@
-﻿'use strict';
+﻿"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('power_words', {
+    await queryInterface.createTable("power_words", {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -33,17 +33,17 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('power_words', ['category'], {
-      name: 'power_words_category_idx',
+    await queryInterface.addIndex("power_words", ["category"], {
+      name: "power_words_category_idx",
     });
 
-    await queryInterface.addIndex('power_words', ['word'], {
+    await queryInterface.addIndex("power_words", ["word"], {
       unique: true,
-      name: 'power_words_word_unique_idx',
+      name: "power_words_word_unique_idx",
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('power_words');
+    await queryInterface.dropTable("power_words");
   },
 };

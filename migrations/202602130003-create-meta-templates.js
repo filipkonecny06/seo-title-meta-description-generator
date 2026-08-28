@@ -1,8 +1,8 @@
-﻿'use strict';
+﻿"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('meta_templates', {
+    await queryInterface.createTable("meta_templates", {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -37,12 +37,12 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('meta_templates', ['style'], {
-      name: 'meta_templates_style_idx',
+    await queryInterface.addIndex("meta_templates", ["style"], {
+      name: "meta_templates_style_idx",
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('meta_templates');
+    await queryInterface.dropTable("meta_templates");
   },
 };

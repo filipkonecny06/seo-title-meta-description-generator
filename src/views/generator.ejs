@@ -1,29 +1,40 @@
 ﻿<%- include('partials/head', { title }) %>
 <%- include('partials/header') %>
 
-<main class="generator-main" data-generator-page data-authenticated="<%= currentUser ? 'true' : 'false' %>">
+<main class="generator-main" id="main-content" data-generator-page data-authenticated="<%= currentUser ? 'true' : 'false' %>">
+  <header class="workspace-intro">
+    <p class="eyebrow">Deterministic workspace</p>
+    <h1>SEO Snippet Generator</h1>
+    <p class="muted">Compare transparent optimization signals. Scores and width checks are guidance, not performance guarantees.</p>
+  </header>
+  <p id="generator-status" class="visually-hidden" role="status" aria-live="polite"></p>
   <section class="workspace-grid">
     <aside class="workspace-panel glass config-panel">
       <h2>Configuration</h2>
-      <form id="generator-form">
+      <form id="generator-form" autocomplete="off">
         <label>
           Primary Keyword *
-          <input type="text" name="primaryKeyword" id="primaryKeyword" placeholder="e.g. project management software" required />
+          <input type="text" name="primaryKeyword" id="primaryKeyword" placeholder="e.g. project management software" maxlength="180" required />
         </label>
 
         <label>
           Secondary Keywords
-          <input type="text" name="secondaryKeywords" id="secondaryKeywords" placeholder="comma separated" />
+          <input type="text" name="secondaryKeywords" id="secondaryKeywords" placeholder="comma separated" maxlength="500" />
         </label>
 
         <label>
           Audience
-          <input type="text" name="audience" id="audience" placeholder="e.g. startups" />
+          <input type="text" name="audience" id="audience" placeholder="e.g. startups" maxlength="120" />
         </label>
 
         <label>
           Location
-          <input type="text" name="location" id="location" placeholder="e.g. New York" />
+          <input type="text" name="location" id="location" placeholder="e.g. New York" maxlength="120" />
+        </label>
+
+        <label>
+          Preview URL
+          <input type="url" name="pageUrl" id="pageUrl" placeholder="https://example.com/page" maxlength="2048" />
         </label>
 
         <label class="checkbox-row">
@@ -76,7 +87,7 @@
           <select name="length" id="length">
             <option value="short">Short</option>
             <option value="medium" selected>Medium</option>
-            <option value="max ctr">Max CTR</option>
+            <option value="max ctr">Maximum visibility</option>
           </select>
         </label>
 
@@ -86,14 +97,14 @@
         </label>
 
         <div class="control-buttons">
-          <button type="button" class="btn" id="generate-btn">Generate</button>
+          <button type="submit" class="btn" id="generate-btn">Generate</button>
           <button type="button" class="btn subtle" id="download-btn">Download .txt</button>
           <button type="button" class="btn subtle" id="export-btn">Export CSV</button>
         </div>
       </form>
     </aside>
 
-    <section class="workspace-panel glass results-panel">
+    <section class="workspace-panel glass results-panel" id="results-panel" aria-busy="false">
       <div class="results-header">
         <h2>Generated Variations</h2>
         <div class="summary-badges" id="summary-badges">
@@ -108,12 +119,12 @@
 
       <div class="result-section">
         <h3>Title Variations</h3>
-        <div class="card-list" id="title-results"></div>
+        <div class="card-list" id="title-results" aria-live="polite"></div>
       </div>
 
       <div class="result-section">
         <h3>Meta Descriptions</h3>
-        <div class="card-list" id="meta-results"></div>
+        <div class="card-list" id="meta-results" aria-live="polite"></div>
       </div>
 
       <div class="compare-panel hidden" id="compare-panel"></div>
@@ -122,9 +133,9 @@
     <aside class="workspace-panel glass preview-panel">
       <div class="preview-header">
         <h2>Live SERP Preview</h2>
-        <div class="toggle-group">
-          <button type="button" class="toggle-btn active" data-device="desktop" id="desktop-toggle">Desktop</button>
-          <button type="button" class="toggle-btn" data-device="mobile" id="mobile-toggle">Mobile</button>
+        <div class="toggle-group" role="group" aria-label="Preview device">
+          <button type="button" class="toggle-btn active" data-device="desktop" id="desktop-toggle" aria-pressed="true">Desktop</button>
+          <button type="button" class="toggle-btn" data-device="mobile" id="mobile-toggle" aria-pressed="false">Mobile</button>
         </div>
       </div>
 
@@ -137,24 +148,20 @@
       <div class="progress-meters">
         <div>
           <div class="meter-head">
-            <span>Title Pixel Width</span>
+            <span>Estimated title width</span>
             <strong id="title-pixels">0 / 580px</strong>
           </div>
-          <div class="meter-track">
-            <div class="meter-fill" id="title-progress"></div>
-          </div>
-          <p class="warning-text" id="title-warning"></p>
+          <progress class="meter-progress" id="title-progress" max="100" value="0">0%</progress>
+          <p class="warning-text" id="title-warning" role="status"></p>
         </div>
 
         <div>
           <div class="meter-head">
-            <span>Meta Pixel Width</span>
+            <span>Estimated meta width</span>
             <strong id="meta-pixels">0 / 920px</strong>
           </div>
-          <div class="meter-track">
-            <div class="meter-fill" id="meta-progress"></div>
-          </div>
-          <p class="warning-text" id="meta-warning"></p>
+          <progress class="meter-progress" id="meta-progress" max="100" value="0">0%</progress>
+          <p class="warning-text" id="meta-warning" role="status"></p>
         </div>
       </div>
 

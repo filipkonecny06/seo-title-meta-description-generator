@@ -1,14 +1,14 @@
 ﻿<%- include('partials/head', { title }) %>
 <%- include('partials/header') %>
 
-<main class="landing-main">
+<main class="landing-main" id="main-content">
   <section class="hero-panel glass">
     <div class="hero-copy">
-      <p class="eyebrow">Production SEO Intelligence</p>
+      <p class="eyebrow">Transparent SEO Drafting</p>
       <h1>SEO Title & Meta Description Generator</h1>
       <p>
-        Generate high-converting SERP snippets with deterministic templates, intent logic,
-        power-word scoring, and pixel-accurate previews.
+        Draft repeatable SERP snippets with editable templates, intent rules,
+        explainable optimization scoring, and width estimates.
       </p>
       <div class="hero-cta">
         <a href="/generator" class="btn">Generate SEO Snippet</a>
@@ -33,8 +33,8 @@
       <h3>What you get</h3>
       <ul>
         <li>Intent-based generation engine</li>
-        <li>CTR score with deterministic badge system</li>
-        <li>Character + pixel width validation</li>
+        <li>Explainable optimization score and badge system</li>
+        <li>Character + estimated width checks</li>
         <li>Google-style SERP desktop/mobile preview</li>
         <li>Save history and favorites</li>
         <li>Schema-ready headline output</li>
@@ -48,12 +48,12 @@
       <p>Match search intent directly using proven title and meta blueprints.</p>
     </article>
     <article class="feature-card glass">
-      <h3>CTR Scoring</h3>
-      <p>Deterministic score from keyword position, power words, length, and year usage.</p>
+      <h3>Optimization Scoring</h3>
+      <p>Inspect a deterministic rubric for keyword position, weighted words, length, and intent.</p>
     </article>
     <article class="feature-card glass">
       <h3>Pixel Preview</h3>
-      <p>Desktop/mobile pixel-width analysis with truncation alerts before publishing.</p>
+      <p>Desktop/mobile width estimates with likely-truncation alerts before publishing.</p>
     </article>
     <article class="feature-card glass">
       <h3>Schema-Ready Output</h3>
@@ -87,7 +87,7 @@
           <li>Deterministic and repeatable output</li>
           <li>Pixel + character checks by default</li>
           <li>Intent and tone controls</li>
-          <li>Built-in CTR score + favorites system</li>
+          <li>Built-in optimization rubric + favorites</li>
         </ul>
       </div>
     </div>
@@ -106,7 +106,7 @@
   </section>
 </main>
 
-<script type="application/ld+json">
+<script type="application/ld+json" nonce="<%= cspNonce %>">
 <%- JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'FAQPage',

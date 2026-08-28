@@ -1,4 +1,4 @@
-﻿const { DataTypes, Model } = require('sequelize');
+﻿const { DataTypes, Model } = require("sequelize");
 
 module.exports = (sequelize) => {
   class MetaTemplate extends Model {}
@@ -31,10 +31,10 @@ module.exports = (sequelize) => {
     },
     {
       sequelize,
-      modelName: 'MetaTemplate',
-      tableName: 'meta_templates',
-      indexes: [{ fields: ['style'] }],
-    }
+      modelName: "MetaTemplate",
+      tableName: "meta_templates",
+      indexes: [{ fields: ["style"] }],
+    },
   );
 
   return MetaTemplate;

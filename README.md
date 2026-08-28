@@ -1,144 +1,111 @@
-﻿# SEO Title + Meta Description Generator (Deterministic SaaS)
+# SEO Title & Meta Description Generator
 
-Production-ready SEO snippet SaaS built with deterministic templates and scoring logic.
+A deterministic SEO-snippet workshop built with Node.js, Express, MySQL, and
+EJS. It turns an explicit brief into inspectable title and description options,
+with transparent optimization heuristics rather than hidden AI prompts.
 
-## Stack
+## Why this project is portfolio-ready
 
-- Backend: Node.js, Express.js, MySQL, Sequelize ORM
-- Security: `helmet`, `express-rate-limit`, `csurf`, `express-session`, MySQL session store
-- Auth: Email/password with `bcrypt`
-- Frontend: EJS server rendering, Vanilla JS, Plain CSS
-- Design: Cinematic dark UI inspired by Netflix/SpaceX aesthetics
+- Clear boundaries: controllers coordinate requests; named services generate,
+  score, and build SERP previews; repositories own catalog access.
+- A versioned JSON catalog makes templates and power words easy to review and
+  edit without changing application logic.
+- Authentication, CSRF protection, session rotation, rate limits, strict CSP,
+  input validation, and ownership checks are implemented and tested.
+- CI runs catalog validation, formatting, linting, coverage-gated tests, and a
+  production dependency audit on every pull request.
 
-## Core Features
+## Features
 
-- Landing page with cinematic hero, feature blocks, comparison, FAQ, and FAQ JSON-LD
-- Generator workspace with 3-column layout:
-  - Config panel (intent/tone/style/length/location/audience/bulk)
-  - Generated results (10 or 20 titles, 5 metas, CTR badges, copy/save)
-  - Live SERP preview (desktop/mobile, keyword highlighting, pixel progress)
-- Deterministic generation engine (no AI APIs)
-- Deterministic CTR scoring
-- Character and pixel-width validation
-- Save generation history and favorite snippets (authenticated users)
-- Export `.txt` and CSV
-- Compare 2 titles
-- Schema-ready headline suggestions
+- Generate titles and descriptions for an intent, audience, location, and
+  style; score the options with an explainable heuristic.
+- Render desktop/mobile SERP previews and compare two candidate titles.
+- Save generation history and favorites for authenticated users.
+- Export outputs as text or CSV (with spreadsheet-formula neutralization).
+- Manage the 80 title templates, 15 meta templates, and 40 power words through
+  `src/catalog/catalog.json`.
 
-## Deterministic CTR Score Rules
-
-Score contributions:
-
-- Contains number: +10
-- Contains year: +8
-- Contains power word: +5 each
-- Length between 50–60 chars: +15
-- Primary keyword at beginning: +10
-- Intent signal match: +10
-
-Badge mapping:
-
-- `90+`: Elite
-- `75-89`: Strong
-- `60-74`: Good
-- `<60`: Weak
-
-## Project Structure
+## Architecture
 
 ```text
-.
-├── migrations/
-├── seeders/
-├── src/
-│   ├── app.js
-│   ├── config/
-│   ├── controllers/
-│   ├── middleware/
-│   ├── models/
-│   ├── public/
-│   │   ├── css/
-│   │   └── js/
-│   ├── routes/
-│   ├── services/
-│   └── views/
-├── .env.example
-├── .gitignore
-├── package.json
-└── README.md
+browser -> routes -> controllers -> services/repositories -> Sequelize/MySQL
+                                    |
+                                    +-> versioned JSON template catalog
 ```
 
-## Setup
+`SnippetGenerator`, `OptimizationScorer`, and `SerpPreviewBuilder` are small,
+independently tested services. `JsonTemplateCatalogRepository` isolates the
+editable catalog from the generation workflow.
 
-1. Install dependencies
+## Run locally
+
+Requires Node.js 22+ and MySQL 8+.
 
 ```bash
-npm install
-```
-
-2. Create MySQL database
-
-```sql
-CREATE DATABASE seo_snippet_saas;
-```
-
-3. Create environment file
-
-```bash
+npm ci
 cp .env.example .env
-```
-
-(Windows PowerShell)
-
-```powershell
-Copy-Item .env.example .env
-```
-
-4. Update `.env` values for local MySQL credentials.
-
-5. Run migrations and seeders
-
-```bash
 npm run db:migrate
-npm run db:seed
-```
-
-6. Start development server
-
-```bash
+npm run catalog:sync
 npm run dev
 ```
 
-App runs at: `http://localhost:3000`
+On Windows PowerShell, replace the `cp` command with
+`Copy-Item .env.example .env`. Set a unique `SESSION_SECRET` of at least 32
+characters and provide your local database settings before starting the app.
 
-## API Routes
+The app listens on `http://localhost:3000` by default. `GET /health/live` is a
+liveness probe and `GET /health/ready` verifies database connectivity.
 
-All state-changing routes require CSRF token.
+### Docker development environment
 
-- `POST /api/generate`
-- `POST /api/preview`
-- `POST /api/save` (auth required)
-- `POST /api/favorite/:id` (auth required)
-- `GET /api/templates`
-- `GET /api/history` (auth required)
+```bash
+docker compose up --build
+```
 
-## Auth Routes
+Docker Compose starts MySQL, runs migrations, synchronizes the catalog, and
+launches the development server. The Compose credentials are intentionally
+local-only defaults; never reuse them in production.
 
-- `POST /register`
-- `POST /login`
-- `POST /logout`
+## Manual catalog workflow
 
-## Notes
+Edit `src/catalog/catalog.json`, then use the checks below:
 
-- Anonymous users can generate snippets but cannot save/favorite.
-- Session data is persisted in MySQL (`sessions` table).
-- Seeders include:
-  - 60 title templates
-  - 30 meta templates
-  - 104 power words
+```bash
+npm run catalog:validate
+npm run catalog:sync:dry-run
+npm run catalog:sync
+```
 
-## Production Considerations
+The first command validates the catalog. The dry run is read-only. The final
+command upserts catalog rows in one database transaction.
 
-- Set strong `SESSION_SECRET` in `.env`
-- Enable HTTPS and secure cookies in production
-- Add database backup and monitoring
-- Add automated tests in CI before deployment
+## Quality checks
+
+```bash
+npm run check
+npm audit --omit=dev --audit-level=high
+```
+
+`npm run check` applies no changes: it checks Prettier formatting, ESLint, and
+Node’s test runner with coverage thresholds for core configuration, catalog,
+application, and generation services (80% lines/functions, 70% branches). Use
+`npm run format` only when you intentionally want formatting changes.
+
+## Security notes
+
+- Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
+- State-changing requests require a synchronizer CSRF token.
+- Successful registration and login rotate the session identifier.
+- Input is schema-validated; API payloads and response bodies are bounded.
+- Auth endpoints and API requests are rate limited; saved resources enforce
+  user ownership server-side.
+- Helmet sets a self-only CSP with per-request nonces; no third-party runtime
+  scripts or fonts are required.
+
+For deployment, terminate TLS before the app, configure `TRUST_PROXY` only for
+your known proxy topology, use managed database backups, and run migrations as
+a release step before starting new application instances.
+
+## License
+
+[MIT](LICENSE).

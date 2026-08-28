@@ -1,4 +1,4 @@
-﻿const { DataTypes, Model } = require('sequelize');
+﻿const { DataTypes, Model } = require("sequelize");
 
 module.exports = (sequelize) => {
   class FavoriteTitle extends Model {}
@@ -26,26 +26,27 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      ctrScore: {
+      optimizationScore: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
+        validate: {
+          min: 0,
+          max: 100,
+        },
       },
       badge: {
         type: DataTypes.STRING(24),
         allowNull: false,
-        defaultValue: 'Weak',
+        defaultValue: "Weak",
       },
     },
     {
       sequelize,
-      modelName: 'FavoriteTitle',
-      tableName: 'favorite_titles',
-      indexes: [
-        { fields: ['userId'] },
-        { fields: ['generationHistoryId'] },
-      ],
-    }
+      modelName: "FavoriteTitle",
+      tableName: "favorite_titles",
+      indexes: [{ fields: ["userId"] }, { fields: ["generationHistoryId"] }],
+    },
   );
 
   return FavoriteTitle;

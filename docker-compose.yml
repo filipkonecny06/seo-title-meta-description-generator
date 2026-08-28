@@ -1,0 +1,55 @@
+services:
+  app:
+    build:
+      context: .
+      target: development
+    command: >
+      sh -c "npm run db:migrate && npm run catalog:sync && npm run dev"
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      APP_BASE_URL: http://localhost:3000
+      SESSION_SECRET: local-development-secret-change-me-32-characters
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_NAME: seo_snippet_saas
+      DB_USER: app
+      DB_PASSWORD: app
+      DB_SSL: "false"
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: seo_snippet_saas
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+      MYSQL_ROOT_PASSWORD: local-root-password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-plocal-root-password",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  app_node_modules:
+  mysql_data:

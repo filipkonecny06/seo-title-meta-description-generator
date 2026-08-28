@@ -1,8 +1,8 @@
-﻿'use strict';
+﻿"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('generation_histories', {
+    await queryInterface.createTable("generation_histories", {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -13,11 +13,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'users',
-          key: 'id',
+          model: "users",
+          key: "id",
         },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       primaryKeyword: {
         type: Sequelize.STRING(180),
@@ -53,16 +53,16 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('generation_histories', ['userId'], {
-      name: 'generation_histories_user_idx',
+    await queryInterface.addIndex("generation_histories", ["userId"], {
+      name: "generation_histories_user_idx",
     });
 
-    await queryInterface.addIndex('generation_histories', ['createdAt'], {
-      name: 'generation_histories_created_idx',
+    await queryInterface.addIndex("generation_histories", ["createdAt"], {
+      name: "generation_histories_created_idx",
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('generation_histories');
+    await queryInterface.dropTable("generation_histories");
   },
 };

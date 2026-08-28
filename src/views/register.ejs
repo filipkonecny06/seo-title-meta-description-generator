@@ -1,7 +1,7 @@
 ﻿<%- include('partials/head', { title }) %>
 <%- include('partials/header') %>
 
-<main class="auth-main">
+<main class="auth-main" id="main-content">
   <section class="auth-card glass">
     <h1>Create Account</h1>
     <p>Save winning snippets and build a reusable SEO snippet library.</p>
@@ -11,17 +11,18 @@
 
       <label>
         Name
-        <input type="text" name="name" required />
+        <input type="text" name="name" autocomplete="name" minlength="2" maxlength="120" required />
       </label>
 
       <label>
         Email
-        <input type="email" name="email" required />
+        <input type="email" name="email" autocomplete="email" maxlength="180" required />
       </label>
 
       <label>
         Password
-        <input type="password" name="password" minlength="8" required />
+        <input type="password" name="password" autocomplete="new-password" minlength="10" maxlength="72" aria-describedby="password-help" required />
+        <span id="password-help" class="muted small-text">Use 10–72 UTF-8 bytes and a password manager.</span>
       </label>
 
       <button type="submit" class="btn">Create Account</button>

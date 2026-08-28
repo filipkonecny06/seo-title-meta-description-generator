@@ -1,13 +1,14 @@
-﻿const express = require('express');
-const pageController = require('../controllers/pageController');
-const { requirePageAuth } = require('../middleware/auth');
+const express = require("express");
+const { requirePageAuth } = require("../middleware/auth");
 
-const router = express.Router();
+const createPageRouter = (controller) => {
+  const router = express.Router();
+  router.get("/", controller.renderLanding);
+  router.get("/generator", controller.renderGenerator);
+  router.get("/login", controller.renderLogin);
+  router.get("/register", controller.renderRegister);
+  router.get("/history", requirePageAuth, controller.renderHistory);
+  return router;
+};
 
-router.get('/', pageController.renderLanding);
-router.get('/generator', pageController.renderGenerator);
-router.get('/login', pageController.renderLogin);
-router.get('/register', pageController.renderRegister);
-router.get('/history', requirePageAuth, pageController.renderHistory);
-
-module.exports = router;
+module.exports = { createPageRouter };

@@ -1,8 +1,8 @@
-﻿'use strict';
+﻿"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('users', {
+    await queryInterface.createTable("users", {
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -25,7 +25,7 @@ module.exports = {
       role: {
         type: Sequelize.STRING(30),
         allowNull: false,
-        defaultValue: 'user',
+        defaultValue: "user",
       },
       createdAt: {
         allowNull: false,
@@ -37,13 +37,13 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('users', ['email'], {
+    await queryInterface.addIndex("users", ["email"], {
       unique: true,
-      name: 'users_email_unique_idx',
+      name: "users_email_unique_idx",
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('users');
+    await queryInterface.dropTable("users");
   },
 };

@@ -1,390 +1,406 @@
-﻿const { Op } = require('sequelize');
-const { calculateCTRScore } = require('./scoringService');
-const { estimatePixelWidth, getPixelLimits } = require('./serpService');
+const { OptimizationScorer } = require("./scoringService");
+const { SerpPreviewBuilder } = require("./serpService");
 
 const DEFAULT_BENEFITS = [
-  'higher organic traffic',
-  'better click-through rate',
-  'faster ranking momentum',
-  'stronger search visibility',
-  'cleaner SERP messaging',
-  'more qualified leads',
-  'better conversion intent',
-  'stronger brand authority',
+  "higher organic traffic",
+  "better click-through potential",
+  "faster ranking momentum",
+  "stronger search visibility",
+  "clearer search messaging",
+  "more qualified leads",
+  "better conversion intent",
+  "stronger brand authority",
 ];
-
 const DEFAULT_URGENCY = [
-  'before your competitors do',
-  'while demand is rising',
-  'before rankings shift again',
-  'without wasting ad spend',
-  'in less time',
+  "before your competitors do",
+  "while demand is rising",
+  "before rankings shift again",
+  "without wasting ad spend",
+  "in less time",
 ];
-
 const DEFAULT_COMPETITORS = [
-  'top alternatives',
-  'leading options',
-  'other providers',
-  'market leaders',
+  "top alternatives",
+  "leading options",
+  "other providers",
+  "market leaders",
 ];
-
 const DEFAULT_NUMBERS = [5, 7, 9, 10, 12, 15, 21];
-
 const TONE_MODIFIERS = {
-  neutral: ['practical', 'clear', 'reliable'],
-  authoritative: ['expert-backed', 'data-driven', 'proven'],
-  urgent: ['time-sensitive', 'high-impact', 'fast-acting'],
-  friendly: ['easy', 'simple', 'approachable'],
+  neutral: ["practical", "clear", "reliable"],
+  authoritative: ["expert-backed", "data-driven", "proven"],
+  urgent: ["time-sensitive", "high-impact", "fast-acting"],
+  friendly: ["easy", "simple", "approachable"],
 };
-
 const INTENT_HOOKS = {
-  informational: ['complete guide', 'step-by-step framework', 'practical tutorial'],
-  commercial: ['side-by-side comparison', 'in-depth review', 'feature breakdown'],
-  transactional: ['best deal', 'pricing insights', 'ready-to-buy checklist'],
-  navigational: ['official resource', 'direct access', 'trusted destination'],
+  informational: [
+    "complete guide",
+    "step-by-step framework",
+    "practical tutorial",
+  ],
+  commercial: [
+    "side-by-side comparison",
+    "in-depth review",
+    "feature breakdown",
+  ],
+  transactional: ["best deal", "pricing insights", "ready-to-buy checklist"],
+  navigational: ["official resource", "direct access", "trusted destination"],
 };
-
 const LENGTH_PROFILES = {
-  short: {
-    title: { min: 42, max: 52 },
-    meta: { min: 110, max: 135 },
-  },
-  medium: {
-    title: { min: 50, max: 60 },
-    meta: { min: 135, max: 155 },
-  },
-  'max ctr': {
-    title: { min: 54, max: 60 },
-    meta: { min: 145, max: 160 },
-  },
+  short: { title: { min: 42, max: 52 }, meta: { min: 110, max: 135 } },
+  medium: { title: { min: 50, max: 60 }, meta: { min: 135, max: 155 } },
+  "max ctr": { title: { min: 54, max: 60 }, meta: { min: 145, max: 160 } },
 };
+const KNOWN_TERMS = new Map([
+  ["ai", "AI"],
+  ["api", "API"],
+  ["b2b", "B2B"],
+  ["b2c", "B2C"],
+  ["cms", "CMS"],
+  ["ctr", "CTR"],
+  ["html", "HTML"],
+  ["saas", "SaaS"],
+  ["seo", "SEO"],
+  ["ui", "UI"],
+  ["url", "URL"],
+  ["ux", "UX"],
+]);
 
-const safeString = (value) => String(value || '').trim();
+const safeString = (value) => String(value ?? "").trim();
+
+const titleCaseToken = (token) => {
+  const known = KNOWN_TERMS.get(token.toLowerCase());
+  if (known) return known;
+  if (/[a-z][A-Z]|[A-Z].*[A-Z]/.test(token)) return token;
+  return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
+};
 
 const titleCase = (value) =>
-  safeString(value)
-    .toLowerCase()
-    .split(' ')
-    .filter(Boolean)
-    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
-    .join(' ');
+  safeString(value).split(/\s+/).filter(Boolean).map(titleCaseToken).join(" ");
 
 const normalizeLengthPreference = (value) => {
-  const normalized = safeString(value).toLowerCase();
-  if (normalized === 'max ctr' || normalized === 'max-ctr') {
-    return 'max ctr';
-  }
-  if (normalized === 'short') {
-    return 'short';
-  }
-  return 'medium';
+  const normalized = safeString(value).toLowerCase().replace("-", " ");
+  return Object.hasOwn(LENGTH_PROFILES, normalized) ? normalized : "medium";
 };
 
+const normalizeBoolean = (value) =>
+  value === true ||
+  value === 1 ||
+  ["true", "1", "on"].includes(safeString(value).toLowerCase());
+
+const splitKeywords = (value) => {
+  const entries = Array.isArray(value) ? value : safeString(value).split(",");
+  return entries.map(safeString).filter(Boolean);
+};
+
+const normalizeInput = (input = {}) => ({
+  primaryKeyword: safeString(input.primaryKeyword),
+  secondaryKeywords: splitKeywords(input.secondaryKeywords),
+  audience: safeString(input.audience),
+  location: safeString(input.location),
+  includeYear: normalizeBoolean(input.includeYear),
+  intent: safeString(input.intent).toLowerCase() || "informational",
+  tone: safeString(input.tone).toLowerCase() || "neutral",
+  titleStyle: safeString(input.titleStyle).toLowerCase() || "list",
+  metaStyle: safeString(input.metaStyle).toLowerCase() || "educational",
+  length: normalizeLengthPreference(input.length),
+  bulkMode: normalizeBoolean(input.bulkMode),
+});
+
 const hashString = (input) => {
-  const value = safeString(input);
   let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(index);
+  for (const character of safeString(input)) {
+    hash = (hash << 5) - hash + character.codePointAt(0);
     hash |= 0;
   }
   return Math.abs(hash);
 };
 
-const pickFrom = (list, seed) => {
-  if (!Array.isArray(list) || !list.length) {
-    return '';
-  }
-  return list[seed % list.length];
-};
-
-const splitKeywords = (value) =>
-  safeString(value)
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
+const pickFrom = (list, seed) =>
+  Array.isArray(list) && list.length ? list[seed % list.length] : "";
 
 const normalizeWhitespace = (value) =>
   safeString(value)
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s+([,.!?;:])/g, '$1')
-    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.!?;:])/g, "$1")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\b(?:in|for)\s+(?=[,.!?;:]|$)/gi, "")
+    .replace(/\s+([|–—-])\s*$/g, "")
     .trim();
+
+const removeEmptyYearClause = (formula, year) => {
+  if (year) return formula;
+  return formula
+    .replace(/\s+(?:in|for)\s+\{Year\}/gi, "")
+    .replace(/\s*\(\s*\{Year\}\s*\)/g, "")
+    .replace(/\s*[,|–—-]\s*\{Year\}/g, "")
+    .replace(/\{Year\}/g, "");
+};
 
 const applyTemplate = (formula, context) =>
   normalizeWhitespace(
-    safeString(formula).replace(/\{([A-Za-z0-9_]+)\}/g, (match, key) => {
-      if (Object.prototype.hasOwnProperty.call(context, key)) {
-        return safeString(context[key]);
-      }
-      return '';
-    })
+    removeEmptyYearClause(safeString(formula), context.Year).replace(
+      /\{([A-Za-z0-9_]+)\}/g,
+      (match, key) =>
+        Object.hasOwn(context, key) ? safeString(context[key]) : "",
+    ),
   );
 
+const trimTrailingPunctuation = (value) =>
+  value.replace(/[\s,;:|/–—-]+$/g, "").trim();
+
 const squeezeTextToLimit = (text, maxChars) => {
-  if (text.length <= maxChars) {
-    return text;
-  }
-
-  const words = text.split(' ');
-  let candidate = words.join(' ');
-
-  while (candidate.length > maxChars && words.length > 3) {
-    words.pop();
-    candidate = `${words.join(' ')}`;
-  }
-
-  return candidate.length > maxChars ? candidate.slice(0, maxChars).trim() : candidate;
+  const value = normalizeWhitespace(text);
+  if (value.length <= maxChars) return value;
+  const slice = value.slice(0, maxChars + 1);
+  const lastSpace = slice.lastIndexOf(" ");
+  const boundary =
+    lastSpace >= Math.floor(maxChars * 0.6) ? lastSpace : maxChars;
+  return trimTrailingPunctuation(slice.slice(0, boundary));
 };
 
-const padTextToMinimum = (text, minChars, fallback) => {
-  if (text.length >= minChars) {
-    return text;
-  }
-
-  const suffix = safeString(fallback);
-  if (!suffix) {
-    return text;
-  }
-
-  const withSuffix = `${text} ${suffix}`.trim();
-  return withSuffix;
-};
-
-const enforceLengthProfile = (text, lengthPreference, type, seed) => {
-  const profile = LENGTH_PROFILES[normalizeLengthPreference(lengthPreference)][type];
-  const fallbackSuffix =
-    type === 'title'
-      ? pickFrom(['Guide', 'Tips', 'Framework', 'Blueprint'], seed)
-      : pickFrom(['Start improving results today.', 'Built for better CTR outcomes.', 'Designed for stronger rankings.'], seed);
-
-  const padded = padTextToMinimum(text, profile.min, fallbackSuffix);
-  return squeezeTextToLimit(padded, profile.max);
-};
-
-const ensureUnique = (text, seen, fallbackToken) => {
+const padTextToMinimum = (text, minChars, maxChars, suffixes) => {
   let candidate = text;
-  let iteration = 1;
-
-  while (seen.has(candidate.toLowerCase()) && iteration < 5) {
-    candidate = `${text} | ${fallbackToken} ${iteration}`;
-    iteration += 1;
+  for (const suffix of suffixes) {
+    if (candidate.length >= minChars) break;
+    const expanded = `${candidate} ${suffix}`.trim();
+    if (expanded.length <= maxChars) candidate = expanded;
   }
-
-  seen.add(candidate.toLowerCase());
   return candidate;
 };
 
-const fetchTitleTemplates = async (TitleTemplate, intent, style) => {
-  const strict = await TitleTemplate.findAll({
-    where: { intent, style },
-    order: [['powerWordBoostScore', 'DESC'], ['id', 'ASC']],
-  });
+const enforceLengthProfile = (text, lengthPreference, type, seed) => {
+  const profile =
+    LENGTH_PROFILES[normalizeLengthPreference(lengthPreference)][type];
+  const suffixes =
+    type === "title"
+      ? [
+          pickFrom(["Guide", "Tips", "Framework", "Blueprint"], seed),
+          "Practical Guide",
+        ]
+      : [
+          pickFrom(
+            [
+              "Start improving your search presence today.",
+              "Built for clearer, stronger search messaging.",
+              "Use the practical next steps to get started.",
+            ],
+            seed,
+          ),
+        ];
+  const padded = padTextToMinimum(
+    normalizeWhitespace(text),
+    profile.min,
+    profile.max,
+    suffixes,
+  );
+  return squeezeTextToLimit(padded, profile.max);
+};
 
-  if (strict.length >= 10) {
-    return strict;
+const ensureUniqueWithinLimit = (text, seen, maxChars, fallbackToken) => {
+  for (let iteration = 0; iteration < 100; iteration += 1) {
+    const suffix =
+      iteration === 0 ? "" : ` · ${fallbackToken}-${iteration + 1}`;
+    const candidate = `${squeezeTextToLimit(text, maxChars - suffix.length)}${suffix}`;
+    const key = candidate.toLocaleLowerCase("en-US");
+    if (!seen.has(key)) {
+      seen.add(key);
+      return candidate;
+    }
+  }
+  throw new Error(
+    "Unable to produce a unique snippet within the configured length.",
+  );
+};
+
+class SnippetGenerator {
+  constructor({ catalogRepository, scorer, previewBuilder, clock } = {}) {
+    if (!catalogRepository)
+      throw new TypeError("SnippetGenerator requires a catalog repository.");
+    this.catalogRepository = catalogRepository;
+    this.scorer = scorer || new OptimizationScorer();
+    this.previewBuilder = previewBuilder || new SerpPreviewBuilder();
+    this.clock = clock || (() => new Date());
   }
 
-  const relaxedStyle = await TitleTemplate.findAll({
-    where: {
-      intent,
-      style: {
-        [Op.in]: ['list', 'how-to', 'question', 'comparison', 'best/top'],
+  async generate(input) {
+    const config = normalizeInput(input);
+    if (!config.primaryKeyword) throw new Error("Primary keyword is required.");
+
+    const titleTemplates = this.catalogRepository.getTitleTemplates(
+      config.intent,
+      config.titleStyle,
+    );
+    const metaTemplates = this.catalogRepository.getMetaTemplates(
+      config.metaStyle,
+    );
+    const powerWords = this.catalogRepository.getPowerWords();
+    if (!titleTemplates.length) {
+      throw new Error(
+        `No title templates exist for ${config.intent}/${config.titleStyle}.`,
+      );
+    }
+    if (!metaTemplates.length)
+      throw new Error(`No meta templates exist for ${config.metaStyle}.`);
+
+    const currentYear = String(this.clock().getFullYear());
+    const baseSeed = hashString(JSON.stringify({ ...config, currentYear }));
+    const titleProfile = LENGTH_PROFILES[config.length].title;
+    const metaProfile = LENGTH_PROFILES[config.length].meta;
+    const titlePixelLimit = this.previewBuilder.getPixelLimits("desktop").title;
+    const metaPixelLimit = this.previewBuilder.getPixelLimits("desktop").meta;
+    const seenTitles = new Set();
+    const seenMetas = new Set();
+
+    const titles = Array.from(
+      { length: config.bulkMode ? 20 : 10 },
+      (_, index) => {
+        const seed = baseSeed + index * 13;
+        const template = titleTemplates[index % titleTemplates.length];
+        const context = this.buildContext(config, seed, currentYear);
+        const rendered = applyTemplate(template.formula, context);
+        const lengthSafe = enforceLengthProfile(
+          rendered,
+          config.length,
+          "title",
+          seed,
+        );
+        const text = ensureUniqueWithinLimit(
+          lengthSafe,
+          seenTitles,
+          titleProfile.max,
+          context.Number,
+        );
+        const scored = this.scorer.score(text, {
+          contentType: "title",
+          intent: config.intent,
+          powerWords,
+          primaryKeyword: titleCase(config.primaryKeyword),
+        });
+        const pixelWidth = Math.round(
+          this.previewBuilder.estimatePixelWidth(text, "title"),
+        );
+        return {
+          id: `title-${index + 1}`,
+          text,
+          charCount: text.length,
+          pixelWidth,
+          optimizationScore: scored.score,
+          badge: scored.badge,
+          scoreBreakdown: scored.breakdown,
+          matchedPowerWords: scored.matchedPowerWords,
+          schemaHeadline: squeezeTextToLimit(text, 110),
+          truncated: pixelWidth > titlePixelLimit,
+          templateStyle: template.style,
+        };
       },
-    },
-    order: [['powerWordBoostScore', 'DESC'], ['id', 'ASC']],
-  });
+    );
 
-  if (relaxedStyle.length >= 10) {
-    return relaxedStyle;
+    const metas = Array.from({ length: 5 }, (_, index) => {
+      const seed = baseSeed + index * 17;
+      const template = metaTemplates[index % metaTemplates.length];
+      const context = this.buildContext(config, seed, currentYear);
+      const rendered = applyTemplate(template.formula, context);
+      const lengthSafe = enforceLengthProfile(
+        rendered,
+        config.length,
+        "meta",
+        seed,
+      );
+      const text = ensureUniqueWithinLimit(
+        lengthSafe,
+        seenMetas,
+        metaProfile.max,
+        context.Number,
+      );
+      const scored = this.scorer.score(text, {
+        contentType: "meta",
+        intent: config.intent,
+        powerWords,
+        primaryKeyword: titleCase(config.primaryKeyword),
+      });
+      const pixelWidth = Math.round(
+        this.previewBuilder.estimatePixelWidth(text, "meta"),
+      );
+      return {
+        id: `meta-${index + 1}`,
+        text,
+        charCount: text.length,
+        pixelWidth,
+        optimizationScore: scored.score,
+        badge: scored.badge,
+        scoreBreakdown: scored.breakdown,
+        matchedPowerWords: scored.matchedPowerWords,
+        truncated: pixelWidth > metaPixelLimit,
+      };
+    });
+
+    const scoreAverage = (items) =>
+      Math.round(
+        items.reduce((total, item) => total + item.optimizationScore, 0) /
+          Math.max(1, items.length),
+      );
+    const bestTitle = [...titles].sort(
+      (first, second) => second.optimizationScore - first.optimizationScore,
+    )[0];
+
+    return {
+      config,
+      titles,
+      metas,
+      schemaHeadlineSuggestions: titles
+        .slice(0, 3)
+        .map((item) => item.schemaHeadline),
+      summary: {
+        titleCount: titles.length,
+        metaCount: metas.length,
+        avgTitleScore: scoreAverage(titles),
+        avgMetaScore: scoreAverage(metas),
+        bestTitle,
+      },
+    };
   }
 
-  return TitleTemplate.findAll({
-    where: { intent },
-    order: [['powerWordBoostScore', 'DESC'], ['id', 'ASC']],
-  });
-};
-
-const fetchMetaTemplates = async (MetaTemplate, style) => {
-  const strict = await MetaTemplate.findAll({
-    where: { style },
-    order: [['benefitWeight', 'DESC'], ['urgencyWeight', 'DESC'], ['id', 'ASC']],
-  });
-
-  if (strict.length >= 5) {
-    return strict;
-  }
-
-  return MetaTemplate.findAll({
-    order: [['benefitWeight', 'DESC'], ['urgencyWeight', 'DESC'], ['id', 'ASC']],
-  });
-};
-
-const normalizeInput = (input = {}) => {
-  const includeYear =
-    input.includeYear === true ||
-    input.includeYear === 'true' ||
-    input.includeYear === 'on' ||
-    input.includeYear === 1 ||
-    input.includeYear === '1';
-
-  const bulkMode = input.bulkMode === true || input.bulkMode === 'true' || input.bulkMode === 'on';
-
-  return {
-    primaryKeyword: safeString(input.primaryKeyword),
-    secondaryKeywords: splitKeywords(input.secondaryKeywords),
-    audience: safeString(input.audience),
-    location: safeString(input.location),
-    includeYear,
-    intent: safeString(input.intent).toLowerCase() || 'informational',
-    tone: safeString(input.tone).toLowerCase() || 'neutral',
-    titleStyle: safeString(input.titleStyle).toLowerCase() || 'list',
-    metaStyle: safeString(input.metaStyle).toLowerCase() || 'educational',
-    length: normalizeLengthPreference(input.length),
-    bulkMode,
-  };
-};
-
-const generateSnippets = async (input, repositories) => {
-  const { TitleTemplate, MetaTemplate, PowerWord } = repositories;
-  const config = normalizeInput(input);
-
-  if (!config.primaryKeyword) {
-    throw new Error('Primary keyword is required.');
-  }
-
-  const [titleTemplates, metaTemplates, powerWords] = await Promise.all([
-    fetchTitleTemplates(TitleTemplate, config.intent, config.titleStyle),
-    fetchMetaTemplates(MetaTemplate, config.metaStyle),
-    PowerWord.findAll({ order: [['weight', 'DESC'], ['word', 'ASC']] }),
-  ]);
-
-  if (!titleTemplates.length || !metaTemplates.length) {
-    throw new Error('Template library is not seeded. Run database seeders first.');
-  }
-
-  const currentYear = String(new Date().getFullYear());
-  const baseSeed = hashString(`${config.primaryKeyword}:${config.intent}:${config.titleStyle}`);
-  const titleLimit = getPixelLimits('desktop').title;
-  const metaLimit = getPixelLimits('desktop').meta;
-  const seenTitles = new Set();
-  const seenMetas = new Set();
-
-  const titleCount = config.bulkMode ? 20 : 10;
-  const metaCount = 5;
-
-  const titles = [];
-  for (let index = 0; index < titleCount; index += 1) {
-    const seed = baseSeed + index * 13;
-    const template = titleTemplates[index % titleTemplates.length];
-    const benefit = pickFrom(DEFAULT_BENEFITS, seed);
-    const urgency = pickFrom(DEFAULT_URGENCY, seed + 2);
-    const competitor =
-      config.secondaryKeywords[0] || pickFrom(DEFAULT_COMPETITORS, seed + 5);
-
-    const context = {
+  buildContext(config, seed, currentYear) {
+    return {
       PrimaryKeyword: titleCase(config.primaryKeyword),
-      Benefit: benefit,
+      Benefit: pickFrom(DEFAULT_BENEFITS, seed),
       Benefit1: pickFrom(DEFAULT_BENEFITS, seed + 1),
       Benefit2: pickFrom(DEFAULT_BENEFITS, seed + 3),
-      Year: config.includeYear ? currentYear : '',
-      Audience: config.audience || 'marketers',
-      Location: config.location || 'your market',
+      Year: config.includeYear ? currentYear : "",
+      Audience: config.audience || "marketers",
+      Location: config.location || "your market",
       Number: String(pickFrom(DEFAULT_NUMBERS, seed + 4)),
-      Competitor: competitor,
-      SecondaryKeywords: config.secondaryKeywords.join(', '),
-      IntentHook: pickFrom(INTENT_HOOKS[config.intent] || INTENT_HOOKS.informational, seed),
-      Urgency: urgency,
-      ToneModifier: pickFrom(TONE_MODIFIERS[config.tone] || TONE_MODIFIERS.neutral, seed + 7),
+      Competitor:
+        config.secondaryKeywords[0] || pickFrom(DEFAULT_COMPETITORS, seed + 5),
+      SecondaryKeywords: config.secondaryKeywords.join(", "),
+      IntentHook: pickFrom(
+        INTENT_HOOKS[config.intent] || INTENT_HOOKS.informational,
+        seed + 6,
+      ),
+      Urgency: pickFrom(DEFAULT_URGENCY, seed + 7),
+      ToneModifier: pickFrom(
+        TONE_MODIFIERS[config.tone] || TONE_MODIFIERS.neutral,
+        seed + 8,
+      ),
     };
-
-    let text = applyTemplate(template.formula, context);
-    text = enforceLengthProfile(text, config.length, 'title', seed);
-    text = ensureUnique(text, seenTitles, context.Number);
-
-    const score = calculateCTRScore(text, {
-      primaryKeyword: titleCase(config.primaryKeyword),
-      intent: config.intent,
-      powerWords,
-    });
-
-    const pixelWidth = Math.round(estimatePixelWidth(text, 'title'));
-
-    titles.push({
-      id: `title-${index + 1}`,
-      text,
-      charCount: text.length,
-      pixelWidth,
-      ctrScore: score.score,
-      badge: score.badge,
-      matchedPowerWords: score.matchedPowerWords,
-      schemaHeadline: squeezeTextToLimit(text, 110),
-      truncated: pixelWidth > titleLimit,
-    });
   }
+}
 
-  const metas = [];
-  for (let index = 0; index < metaCount; index += 1) {
-    const seed = baseSeed + index * 17;
-    const template = metaTemplates[index % metaTemplates.length];
-
-    const context = {
-      PrimaryKeyword: titleCase(config.primaryKeyword),
-      Benefit: pickFrom(DEFAULT_BENEFITS, seed + 1),
-      Benefit1: pickFrom(DEFAULT_BENEFITS, seed + 2),
-      Benefit2: pickFrom(DEFAULT_BENEFITS, seed + 4),
-      Year: config.includeYear ? currentYear : '',
-      Audience: config.audience || 'your audience',
-      Location: config.location || 'your region',
-      Number: String(pickFrom(DEFAULT_NUMBERS, seed + 3)),
-      Competitor: config.secondaryKeywords[0] || pickFrom(DEFAULT_COMPETITORS, seed + 6),
-      SecondaryKeywords: config.secondaryKeywords.join(', '),
-      IntentHook: pickFrom(INTENT_HOOKS[config.intent] || INTENT_HOOKS.informational, seed + 8),
-      Urgency: pickFrom(DEFAULT_URGENCY, seed + 9),
-      ToneModifier: pickFrom(TONE_MODIFIERS[config.tone] || TONE_MODIFIERS.neutral, seed + 10),
-    };
-
-    let text = applyTemplate(template.formula, context);
-    text = enforceLengthProfile(text, config.length, 'meta', seed);
-    text = ensureUnique(text, seenMetas, context.Number);
-
-    const score = calculateCTRScore(text, {
-      primaryKeyword: titleCase(config.primaryKeyword),
-      intent: config.intent,
-      powerWords,
-    });
-
-    const pixelWidth = Math.round(estimatePixelWidth(text, 'meta'));
-
-    metas.push({
-      id: `meta-${index + 1}`,
-      text,
-      charCount: text.length,
-      pixelWidth,
-      ctrScore: score.score,
-      badge: score.badge,
-      matchedPowerWords: score.matchedPowerWords,
-      truncated: pixelWidth > metaLimit,
-    });
+const generateSnippets = async (input, repositories) => {
+  if (repositories?.catalogRepository) {
+    return new SnippetGenerator({
+      catalogRepository: repositories.catalogRepository,
+    }).generate(input);
   }
-
-  const bestTitle = [...titles].sort((a, b) => b.ctrScore - a.ctrScore)[0] || null;
-
-  return {
-    config,
-    titles,
-    metas,
-    schemaHeadlineSuggestions: titles.slice(0, 3).map((item) => item.schemaHeadline),
-    summary: {
-      titleCount: titles.length,
-      metaCount: metas.length,
-      avgTitleScore: Math.round(titles.reduce((total, item) => total + item.ctrScore, 0) / titles.length),
-      avgMetaScore: Math.round(metas.reduce((total, item) => total + item.ctrScore, 0) / metas.length),
-      bestTitle,
-    },
-  };
+  throw new TypeError("generateSnippets now requires a catalogRepository.");
 };
 
 module.exports = {
+  LENGTH_PROFILES,
+  SnippetGenerator,
+  applyTemplate,
+  ensureUniqueWithinLimit,
   generateSnippets,
   normalizeInput,
+  titleCase,
 };

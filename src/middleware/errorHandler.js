@@ -1,37 +1,65 @@
-﻿const notFoundHandler = (req, res, next) => {
-  const error = new Error('Route not found');
+const { ZodError } = require("zod");
+
+const notFoundHandler = (req, res, next) => {
+  const error = new Error("Route not found");
   error.status = 404;
   next(error);
 };
 
-const errorHandler = (err, req, res, next) => {
-  const status = err.status || err.statusCode || 500;
+const createErrorHandler =
+  ({ logger = console } = {}) =>
+  (error, req, res, next) => {
+    if (res.headersSent) return next(error);
 
-  if (err.code === 'EBADCSRFTOKEN') {
-    if (req.path.startsWith('/api')) {
-      return res.status(403).json({ error: 'Invalid CSRF token. Refresh and try again.' });
+    const isValidationError = error instanceof ZodError;
+    const status =
+      error.code === "EBADCSRFTOKEN"
+        ? 403
+        : error.type === "entity.too.large"
+          ? 413
+          : isValidationError
+            ? 400
+            : error.status || error.statusCode || 500;
+
+    if (status >= 500) {
+      logger.error?.("Unhandled request error", {
+        method: req.method,
+        path: req.path,
+        error: error.stack || error.message,
+      });
     }
-    return res.status(403).render('error', {
-      title: 'Security Token Error',
-      status: 403,
-      message: 'Your form session expired. Refresh the page and submit again.',
+
+    const publicMessage =
+      status >= 500
+        ? "Internal server error."
+        : error.code === "EBADCSRFTOKEN"
+          ? "Invalid CSRF token. Refresh and try again."
+          : isValidationError
+            ? "Request validation failed."
+            : error.message;
+
+    if (
+      req.path.startsWith("/api") ||
+      req.accepts(["json", "html"]) === "json"
+    ) {
+      return res.status(status).json({
+        error: publicMessage,
+        ...(isValidationError
+          ? {
+              details: error.issues.map((issue) => ({
+                path: issue.path.join("."),
+                message: issue.message,
+              })),
+            }
+          : {}),
+      });
+    }
+
+    return res.status(status).render("error", {
+      title: status === 403 ? "Security Token Error" : "Something Went Wrong",
+      status,
+      message: publicMessage,
     });
-  }
+  };
 
-  if (req.path.startsWith('/api')) {
-    return res.status(status).json({
-      error: status >= 500 ? 'Internal server error' : err.message,
-    });
-  }
-
-  return res.status(status).render('error', {
-    title: 'Something Went Wrong',
-    status,
-    message: status >= 500 ? 'Unexpected server error.' : err.message,
-  });
-};
-
-module.exports = {
-  notFoundHandler,
-  errorHandler,
-};
+module.exports = { createErrorHandler, notFoundHandler };

@@ -1,24 +1,25 @@
-﻿const { Sequelize } = require('sequelize');
+const { Sequelize } = require("sequelize");
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT || 3306),
-    dialect: 'mysql',
-    logging: false,
-    dialectOptions:
-      process.env.NODE_ENV === 'production'
-        ? {
-            ssl: {
-              require: true,
-              rejectUnauthorized: false,
-            },
-          }
-        : undefined,
-  }
-);
+const createSequelize = (config, { logging = false } = {}) =>
+  new Sequelize(config.name, config.user, config.password, {
+    host: config.host,
+    port: config.port,
+    dialect: "mysql",
+    logging,
+    pool: {
+      max: config.pool?.max ?? 10,
+      min: config.pool?.min ?? 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+    dialectOptions: config.ssl
+      ? {
+          ssl: {
+            require: true,
+            rejectUnauthorized: config.rejectUnauthorized !== false,
+          },
+        }
+      : undefined,
+  });
 
-module.exports = sequelize;
+module.exports = { createSequelize };

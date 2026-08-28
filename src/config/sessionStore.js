@@ -1,26 +1,27 @@
-﻿const session = require('express-session');
-const MySQLStoreFactory = require('express-mysql-session');
+const session = require("express-session");
+const createMySQLStore = require("express-mysql-session");
 
-const MySQLStore = MySQLStoreFactory(session);
+const MySQLStore = createMySQLStore(session);
 
-const sessionStore = new MySQLStore({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  createDatabaseTable: true,
-  clearExpired: true,
-  checkExpirationInterval: 900000,
-  expiration: 86400000,
-  schema: {
-    tableName: 'sessions',
-    columnNames: {
-      session_id: 'session_id',
-      expires: 'expires',
-      data: 'data',
+const createSessionStore = (config) =>
+  new MySQLStore({
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    database: config.name,
+    createDatabaseTable: false,
+    clearExpired: true,
+    checkExpirationInterval: 900000,
+    expiration: 1000 * 60 * 60 * 24 * 7,
+    schema: {
+      tableName: "sessions",
+      columnNames: {
+        session_id: "session_id",
+        expires: "expires",
+        data: "data",
+      },
     },
-  },
-});
+  });
 
-module.exports = sessionStore;
+module.exports = { createSessionStore };
