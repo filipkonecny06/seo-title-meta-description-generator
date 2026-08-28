@@ -1,8 +1,8 @@
 const landingFaq = [
   {
-    question: "How is this different from AI copy tools?",
+    question: "What makes the output repeatable?",
     answer:
-      "It uses version-controlled templates and transparent heuristics, so output is repeatable and has no model or token dependency.",
+      "It uses version-controlled templates and transparent heuristics, so the same brief produces inspectable results.",
   },
   {
     question: "Does the score predict click-through rate?",

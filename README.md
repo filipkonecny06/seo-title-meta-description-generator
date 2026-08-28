@@ -1,8 +1,8 @@
 # SEO Title & Meta Description Generator
 
 A deterministic SEO-snippet workshop built with Node.js, Express, MySQL, and
-EJS. It turns an explicit brief into inspectable title and description options,
-with transparent optimization heuristics rather than hidden AI prompts.
+EJS. It turns an explicit brief into inspectable title and description options
+with transparent optimization heuristics.
 
 ## Why this project is portfolio-ready
 
