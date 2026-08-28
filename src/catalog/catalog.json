@@ -1,229 +1,179 @@
 {
-  "version": 1,
+  "version": 3,
   "intents": ["informational", "commercial", "transactional", "navigational"],
   "titleTemplates": {
     "list": [
       {
-        "formula": "{Number} {PrimaryKeyword} Ideas for {Audience} in {Year}",
-        "powerWordBoostScore": 7
+        "formula": "{Year}: {Number} {ToneCueTitle} Ways to {IntentActionTitle} {PrimaryKeyword}"
       },
       {
-        "formula": "{PrimaryKeyword}: {Number} Ways to Unlock {Benefit}",
-        "powerWordBoostScore": 9
+        "formula": "{IntentActionTitle} {PrimaryKeyword}: {Number} {ToneCueTitle} Checks"
       },
       {
-        "formula": "Top {Number} {PrimaryKeyword} Strategies for {Location}",
-        "powerWordBoostScore": 8
+        "formula": "{ToneCueTitle} {PrimaryKeyword} List: {Number} {IntentTopicTitle}"
       },
       {
-        "formula": "{PrimaryKeyword} Checklist: {IntentHook} for {Audience}",
-        "powerWordBoostScore": 6
+        "formula": "{Number} {ToneCueTitle} {IntentTopicTitle} for {PrimaryKeyword}"
       }
     ],
     "how-to": [
       {
-        "formula": "How to Use {PrimaryKeyword} for {Benefit} in {Year}",
-        "powerWordBoostScore": 9
+        "formula": "{Year}: {Number} {ToneCueTitle} Steps to {IntentActionTitle} {PrimaryKeyword}"
       },
       {
-        "formula": "How to Master {PrimaryKeyword}: A {ToneModifier} Guide",
-        "powerWordBoostScore": 8
+        "formula": "{IntentActionTitle} {PrimaryKeyword} in {Number} {ToneCueTitle} Steps"
       },
       {
-        "formula": "How to Improve {PrimaryKeyword} for {Audience}",
-        "powerWordBoostScore": 7
+        "formula": "{PrimaryKeyword}: {Number} {ToneCueTitle} Steps to {IntentActionTitle}"
       },
       {
-        "formula": "How to Build a {PrimaryKeyword} Framework for {Location}",
-        "powerWordBoostScore": 7
+        "formula": "{ToneCueTitle} Plan: {IntentActionTitle} {PrimaryKeyword} in {Number} Steps"
       }
     ],
     "question": [
       {
-        "formula": "What Makes {PrimaryKeyword} Effective in {Year}?",
-        "powerWordBoostScore": 7
+        "formula": "{Number} {ToneCueTitle} Questions on {IntentActionGerundTitle} {PrimaryKeyword}"
       },
       {
-        "formula": "Is {PrimaryKeyword} Right for {Audience}?",
-        "powerWordBoostScore": 6
+        "formula": "{PrimaryKeyword}? {Number} {ToneCueTitle} Ways to {IntentActionTitle}"
       },
       {
-        "formula": "Can {PrimaryKeyword} Deliver {Benefit}?",
-        "powerWordBoostScore": 8
+        "formula": "{Number} {ToneCueTitle} Questions: {IntentActionTitle} {PrimaryKeyword}"
       },
       {
-        "formula": "Which {PrimaryKeyword} Approach Works in {Location}?",
-        "powerWordBoostScore": 6
+        "formula": "{Year}: {PrimaryKeyword}? {Number} {ToneCueTitle} {IntentTopicTitle}"
       }
     ],
     "comparison": [
       {
-        "formula": "{PrimaryKeyword} vs {Competitor}: A Clear Comparison",
-        "powerWordBoostScore": 8
+        "formula": "{PrimaryKeyword} vs {Competitor}: {Number} {ToneCueTitle} {IntentTopicTitle}"
       },
       {
-        "formula": "{PrimaryKeyword} vs Alternatives for {Audience}",
-        "powerWordBoostScore": 7
+        "formula": "{PrimaryKeyword} or {Competitor}? {Number} {ToneCueTitle} {IntentTopicTitle}"
       },
       {
-        "formula": "Compare {PrimaryKeyword}: {IntentHook} in {Year}",
-        "powerWordBoostScore": 8
+        "formula": "{Number} {ToneCueTitle} {IntentTopicTitle}: {PrimaryKeyword} vs {Competitor}"
       },
       {
-        "formula": "{PrimaryKeyword} Comparison Guide for {Location}",
-        "powerWordBoostScore": 6
+        "formula": "{Number} {ToneCueTitle} {IntentTopicTitle}: {PrimaryKeyword} or {Competitor}"
       }
     ],
-    "best/top": [
+    "guide": [
       {
-        "formula": "Best {PrimaryKeyword} Options for {Audience} in {Year}",
-        "powerWordBoostScore": 10
+        "formula": "{ToneCueTitle} {Number}-Step Guide to {IntentActionGerundTitle} {PrimaryKeyword}"
       },
       {
-        "formula": "Top {Number} {PrimaryKeyword} Picks for {Location}",
-        "powerWordBoostScore": 9
+        "formula": "{IntentActionTitle} {PrimaryKeyword}: {Number} {ToneCueTitle} Guide Steps"
       },
       {
-        "formula": "Best {PrimaryKeyword} Strategies for {Benefit}",
-        "powerWordBoostScore": 9
+        "formula": "{Year} {PrimaryKeyword} Guide: {Number} {ToneCueTitle} {IntentTopicTitle}"
       },
       {
-        "formula": "Top {PrimaryKeyword} Recommendations: {IntentHook}",
-        "powerWordBoostScore": 8
+        "formula": "{ToneCueTitle} Guide: {IntentActionTitle} {PrimaryKeyword}, {Number} Steps"
       }
     ]
   },
   "metaTemplates": {
     "educational": [
       {
-        "formula": "Learn how to use {PrimaryKeyword} with a {IntentHook}. Get practical steps for {Benefit}.",
-        "benefitWeight": 9,
-        "urgencyWeight": 4
+        "formula": "{IntentActionTitle} {PrimaryKeyword} in {Year} with a {ToneCue} overview of {TopicAngle}, {IntentTopic}, and scope."
       },
       {
-        "formula": "Explore {PrimaryKeyword} fundamentals, useful examples, and a clear path to {Benefit} for {Audience}.",
-        "benefitWeight": 8,
-        "urgencyWeight": 3
+        "formula": "{IntentActionTitle} {PrimaryKeyword} through a {ToneCue} review for {Audience}, including {IntentTopic} and examples."
       },
       {
-        "formula": "Understand {PrimaryKeyword} in {Year} with a practical guide designed for {Audience} in {Location}.",
-        "benefitWeight": 7,
-        "urgencyWeight": 3
+        "formula": "{IntentActionTitle} {PrimaryKeyword} with a {ToneCue} guide to {IntentTopic}, common questions, and examples."
       },
       {
-        "formula": "Discover a proven {PrimaryKeyword} framework that turns complex decisions into clear next steps.",
-        "benefitWeight": 9,
-        "urgencyWeight": 4
+        "formula": "Use this {ToneCue} overview to {IntentAction} {PrimaryKeyword}, review {TopicAngle}, and document {IntentTopic}."
       },
       {
-        "formula": "Get a step-by-step {PrimaryKeyword} guide with examples, common pitfalls, and expert-backed recommendations.",
-        "benefitWeight": 8,
-        "urgencyWeight": 4
+        "formula": "Follow a {ToneCue} explanation to {IntentAction} {PrimaryKeyword}, check {IntentTopic}, and plan the page."
       }
     ],
-    "sales-focused": [
+    "decision-support": [
       {
-        "formula": "Compare {PrimaryKeyword} options, pricing considerations, and key benefits before you decide.",
-        "benefitWeight": 8,
-        "urgencyWeight": 7
+        "formula": "{Year}: Review {PrimaryKeyword} vs {Competitor}. Use {IntentTopic} to {IntentAction} what fits; keep it {ToneCue}."
       },
       {
-        "formula": "Find the right {PrimaryKeyword} for {Audience}. Review trusted features and make a confident choice {Urgency}.",
-        "benefitWeight": 9,
-        "urgencyWeight": 8
+        "formula": "Compare {PrimaryKeyword} with {Competitor} in a {ToneCue} review. Use {IntentTopic} to {IntentAction} what fits."
       },
       {
-        "formula": "Choose {PrimaryKeyword} with a clear comparison of value, speed, and results for {Location}.",
-        "benefitWeight": 8,
-        "urgencyWeight": 6
+        "formula": "Check {PrimaryKeyword} against {Competitor} with a {ToneCue} review of {IntentTopic}; then {IntentAction} what fits."
       },
       {
-        "formula": "Shortlist proven {PrimaryKeyword} options and identify the best fit for your goals in less time.",
-        "benefitWeight": 9,
-        "urgencyWeight": 8
+        "formula": "Place {PrimaryKeyword} beside {Competitor} for a {ToneCue} review. Use {IntentTopic} to {IntentAction} what fits."
       },
       {
-        "formula": "See how leading {PrimaryKeyword} choices compare so you can move forward with confidence.",
-        "benefitWeight": 8,
-        "urgencyWeight": 7
+        "formula": "Apply {Number} {ToneCue} criteria to {PrimaryKeyword} and {Competitor}; review {IntentTopic}, then {IntentAction} what fits."
       }
     ],
-    "benefit-driven": [
+    "action-oriented": [
       {
-        "formula": "Unlock {Benefit} with a practical {PrimaryKeyword} strategy tailored to {Audience}.",
-        "benefitWeight": 10,
-        "urgencyWeight": 5
+        "formula": "{IntentActionTitle} {PrimaryKeyword} in {Year} with a {ToneCue} checklist covering {IntentTopic}, owners, and review points."
       },
       {
-        "formula": "Improve {Benefit1} and {Benefit2} with focused {PrimaryKeyword} tactics you can apply today.",
-        "benefitWeight": 10,
-        "urgencyWeight": 8
+        "formula": "Turn a {ToneCue} brief into steps to {IntentAction} {PrimaryKeyword}, covering {TopicAngle}, {IntentTopic}, and ownership."
       },
       {
-        "formula": "Turn {PrimaryKeyword} into measurable progress with a proven process built for {Location}.",
-        "benefitWeight": 9,
-        "urgencyWeight": 6
+        "formula": "Build a {ToneCue} workflow to {IntentAction} {PrimaryKeyword} with {IntentTopic}, clear inputs, criteria, and owners."
       },
       {
-        "formula": "Build lasting momentum with {PrimaryKeyword} guidance focused on {Benefit} and clear next steps.",
-        "benefitWeight": 9,
-        "urgencyWeight": 6
+        "formula": "Create a {ToneCue} checklist to {IntentAction} {PrimaryKeyword} in {Location}, then verify {IntentTopic} before publishing."
       },
       {
-        "formula": "Get stronger outcomes from {PrimaryKeyword} with an expert-backed, outcome-first framework.",
-        "benefitWeight": 10,
-        "urgencyWeight": 5
+        "formula": "Use {ToneCue} examples to {IntentAction} {PrimaryKeyword}, compare {IntentTopic}, and revise the page through clear steps."
       }
     ]
   },
   "powerWords": {
-    "emotion": [
-      { "word": "amazing", "weight": 2 },
-      { "word": "effortless", "weight": 3 },
-      { "word": "breakthrough", "weight": 4 },
-      { "word": "powerful", "weight": 3 },
-      { "word": "exceptional", "weight": 4 },
-      { "word": "transformative", "weight": 4 },
-      { "word": "compelling", "weight": 3 },
-      { "word": "confident", "weight": 2 },
-      { "word": "impactful", "weight": 3 },
-      { "word": "clear", "weight": 1 }
+    "clarity": [
+      { "word": "clear", "weight": 3 },
+      { "word": "practical", "weight": 3 },
+      { "word": "simple", "weight": 2 },
+      { "word": "complete", "weight": 2 },
+      { "word": "concise", "weight": 2 },
+      { "word": "focused", "weight": 2 },
+      { "word": "useful", "weight": 2 },
+      { "word": "direct", "weight": 2 },
+      { "word": "structured", "weight": 3 },
+      { "word": "readable", "weight": 2 }
     ],
-    "urgency": [
-      { "word": "now", "weight": 3 },
-      { "word": "today", "weight": 3 },
-      { "word": "instant", "weight": 4 },
-      { "word": "fast", "weight": 2 },
-      { "word": "limited", "weight": 4 },
-      { "word": "urgent", "weight": 5 },
-      { "word": "critical", "weight": 4 },
-      { "word": "rapid", "weight": 3 },
-      { "word": "soon", "weight": 2 },
-      { "word": "momentum", "weight": 2 }
+    "action": [
+      { "word": "learn", "weight": 2 },
+      { "word": "compare", "weight": 3 },
+      { "word": "choose", "weight": 2 },
+      { "word": "review", "weight": 3 },
+      { "word": "build", "weight": 2 },
+      { "word": "improve", "weight": 2 },
+      { "word": "explore", "weight": 2 },
+      { "word": "understand", "weight": 2 },
+      { "word": "create", "weight": 2 },
+      { "word": "check", "weight": 2 }
     ],
-    "authority": [
-      { "word": "expert", "weight": 3 },
-      { "word": "proven", "weight": 4 },
-      { "word": "verified", "weight": 4 },
-      { "word": "official", "weight": 4 },
-      { "word": "advanced", "weight": 3 },
+    "format": [
+      { "word": "guide", "weight": 3 },
+      { "word": "checklist", "weight": 3 },
+      { "word": "examples", "weight": 2 },
+      { "word": "steps", "weight": 2 },
       { "word": "framework", "weight": 2 },
-      { "word": "optimized", "weight": 3 },
-      { "word": "professional", "weight": 2 },
-      { "word": "elite", "weight": 4 },
-      { "word": "trusted", "weight": 3 }
+      { "word": "options", "weight": 2 },
+      { "word": "features", "weight": 2 },
+      { "word": "pricing", "weight": 2 },
+      { "word": "tutorial", "weight": 3 },
+      { "word": "criteria", "weight": 3 }
     ],
-    "trust": [
-      { "word": "reliable", "weight": 3 },
-      { "word": "safe", "weight": 3 },
-      { "word": "secure", "weight": 4 },
-      { "word": "honest", "weight": 3 },
-      { "word": "transparent", "weight": 4 },
-      { "word": "credible", "weight": 3 },
-      { "word": "consistent", "weight": 2 },
-      { "word": "authentic", "weight": 3 },
-      { "word": "stable", "weight": 2 },
-      { "word": "accountable", "weight": 3 }
+    "evaluation": [
+      { "word": "overview", "weight": 2 },
+      { "word": "details", "weight": 2 },
+      { "word": "workflow", "weight": 2 },
+      { "word": "method", "weight": 2 },
+      { "word": "summary", "weight": 2 },
+      { "word": "process", "weight": 2 },
+      { "word": "reference", "weight": 2 },
+      { "word": "breakdown", "weight": 2 },
+      { "word": "analysis", "weight": 2 },
+      { "word": "trade-offs", "weight": 3 }
     ]
   }
 }

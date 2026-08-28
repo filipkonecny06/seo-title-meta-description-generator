@@ -1,5 +1,13 @@
 const { Sequelize } = require("sequelize");
 
+const buildTlsOptions = (config) =>
+  config.ssl
+    ? {
+        require: true,
+        rejectUnauthorized: config.rejectUnauthorized !== false,
+      }
+    : undefined;
+
 const createSequelize = (config, { logging = false } = {}) =>
   new Sequelize(config.name, config.user, config.password, {
     host: config.host,
@@ -12,14 +20,7 @@ const createSequelize = (config, { logging = false } = {}) =>
       acquire: 30000,
       idle: 10000,
     },
-    dialectOptions: config.ssl
-      ? {
-          ssl: {
-            require: true,
-            rejectUnauthorized: config.rejectUnauthorized !== false,
-          },
-        }
-      : undefined,
+    dialectOptions: config.ssl ? { ssl: buildTlsOptions(config) } : undefined,
   });
 
-module.exports = { createSequelize };
+module.exports = { buildTlsOptions, createSequelize };

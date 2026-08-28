@@ -1,9 +1,15 @@
 const { z } = require("zod");
+const { parseEnvironmentBoolean } = require("./environmentBoolean");
 
-const booleanFromEnvironment = z.preprocess((value) => {
-  if (typeof value === "boolean") return value;
-  return ["1", "true", "yes", "on"].includes(String(value || "").toLowerCase());
-}, z.boolean());
+const booleanFromEnvironment = (name) =>
+  z.any().transform((value, context) => {
+    try {
+      return parseEnvironmentBoolean(value, { name });
+    } catch (error) {
+      context.addIssue({ code: "custom", message: error.message });
+      return z.NEVER;
+    }
+  });
 
 const environmentSchema = z
   .object({
@@ -27,8 +33,10 @@ const environmentSchema = z
     DB_NAME: z.string().trim().min(1),
     DB_USER: z.string().trim().min(1),
     DB_PASSWORD: z.string().default(""),
-    DB_SSL: booleanFromEnvironment.default(false),
-    DB_SSL_REJECT_UNAUTHORIZED: booleanFromEnvironment.default(true),
+    DB_SSL: booleanFromEnvironment("DB_SSL").default(false),
+    DB_SSL_REJECT_UNAUTHORIZED: booleanFromEnvironment(
+      "DB_SSL_REJECT_UNAUTHORIZED",
+    ).default(true),
     DB_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
     DB_POOL_MIN: z.coerce.number().int().min(0).max(100).default(0),
   })
@@ -74,4 +82,9 @@ const loadEnvironment = (source = process.env) => {
   };
 };
 
-module.exports = { environmentSchema, loadEnvironment, parseTrustProxy };
+module.exports = {
+  booleanFromEnvironment,
+  environmentSchema,
+  loadEnvironment,
+  parseTrustProxy,
+};

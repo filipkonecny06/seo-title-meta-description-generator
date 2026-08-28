@@ -1,8 +1,17 @@
 const INTENT_SIGNAL_MAP = {
   informational: ["how", "guide", "tips", "learn", "tutorial"],
-  commercial: ["best", "top", "review", "compare", "versus", "vs"],
-  transactional: ["buy", "pricing", "deal", "book", "order"],
-  navigational: ["official", "login", "near me", "website", "dashboard"],
+  commercial: ["review", "compare", "versus", "vs", "options", "features"],
+  transactional: ["pricing", "choose", "checklist", "order", "request"],
+  navigational: [
+    "find",
+    "page",
+    "pages",
+    "login",
+    "account",
+    "website",
+    "dashboard",
+    "navigation",
+  ],
 };
 
 const OPTIMAL_LENGTHS = {
@@ -41,10 +50,10 @@ const hasIntentSignal = (text, intent) =>
 const clampScore = (value) => Math.max(0, Math.min(100, Math.round(value)));
 
 const resolveBadge = (score) => {
-  if (score >= 90) return "Elite";
-  if (score >= 75) return "Strong";
-  if (score >= 60) return "Good";
-  return "Developing";
+  if (score >= 90) return "High alignment";
+  if (score >= 75) return "Moderate alignment";
+  if (score >= 60) return "Partial alignment";
+  return "Review";
 };
 
 class OptimizationScorer {

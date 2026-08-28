@@ -90,24 +90,33 @@ class ApiController {
       );
     }
 
-    const row = await this.models.FavoriteTitle.create({
+    const identity = {
       userId: req.session.userId,
       generationHistoryId: history.id,
-      title:
-        input.type === "title"
-          ? item.text
-          : history.selectedTitle || titles[0]?.text,
-      meta:
-        input.type === "meta"
-          ? item.text
-          : history.selectedMeta || metas[0]?.text || null,
-      optimizationScore: item.optimizationScore,
-      badge: item.badge,
+      kind: input.type,
+      itemKey: item.id,
+    };
+    const [row, created] = await this.models.FavoriteSnippet.findOrCreate({
+      where: identity,
+      defaults: {
+        ...identity,
+        title:
+          input.type === "title"
+            ? item.text
+            : history.selectedTitle || titles[0]?.text,
+        meta:
+          input.type === "meta"
+            ? item.text
+            : history.selectedMeta || metas[0]?.text || null,
+        optimizationScore: item.optimizationScore,
+        badge: item.badge,
+      },
     });
 
-    return res
-      .status(201)
-      .json({ message: "Favorite saved.", favoriteId: row.id });
+    return res.status(created ? 201 : 200).json({
+      message: created ? "Favorite saved." : "Favorite already saved.",
+      favoriteId: row.id,
+    });
   }
 
   templates(req, res) {

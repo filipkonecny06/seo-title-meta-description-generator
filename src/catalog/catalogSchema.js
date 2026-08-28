@@ -8,22 +8,30 @@ const INTENTS = [
   "transactional",
   "navigational",
 ];
-const TITLE_STYLES = ["list", "how-to", "question", "comparison", "best/top"];
-const META_STYLES = ["educational", "sales-focused", "benefit-driven"];
+const TITLE_STYLES = ["list", "how-to", "question", "comparison", "guide"];
+const META_STYLES = ["educational", "decision-support", "action-oriented"];
+const POWER_WORD_CATEGORIES = ["clarity", "action", "format", "evaluation"];
 
 const allowedPlaceholders = new Set([
   "Audience",
-  "Benefit",
-  "Benefit1",
-  "Benefit2",
+  "AudienceTitle",
   "Competitor",
+  "IntentAction",
+  "IntentActionGerundTitle",
+  "IntentActionTitle",
   "IntentHook",
+  "IntentTopic",
+  "IntentTopicTitle",
   "Location",
+  "LocationTitle",
   "Number",
   "PrimaryKeyword",
-  "SecondaryKeywords",
+  "TopicAngle",
+  "TopicAngleTitle",
   "ToneModifier",
-  "Urgency",
+  "ToneModifierTitle",
+  "ToneCue",
+  "ToneCueTitle",
   "Year",
 ]);
 
@@ -31,14 +39,11 @@ const formulaSchema = z.string().trim().min(12).max(500);
 const titleTemplateSchema = z
   .object({
     formula: formulaSchema,
-    powerWordBoostScore: z.number().int().min(0).max(100),
   })
   .strict();
 const metaTemplateSchema = z
   .object({
     formula: formulaSchema,
-    benefitWeight: z.number().int().min(0).max(100),
-    urgencyWeight: z.number().int().min(0).max(100),
   })
   .strict();
 const powerWordSchema = z
@@ -73,12 +78,14 @@ const catalogSchema = z
       )
       .strict(),
     powerWords: z
-      .object({
-        emotion: z.array(powerWordSchema).min(1),
-        urgency: z.array(powerWordSchema).min(1),
-        authority: z.array(powerWordSchema).min(1),
-        trust: z.array(powerWordSchema).min(1),
-      })
+      .object(
+        Object.fromEntries(
+          POWER_WORD_CATEGORIES.map((category) => [
+            category,
+            z.array(powerWordSchema).length(10),
+          ]),
+        ),
+      )
       .strict(),
   })
   .strict()
@@ -104,10 +111,80 @@ const catalogSchema = z
       });
 
     const formulas = [
-      ...Object.values(catalog.titleTemplates).flat(),
-      ...Object.values(catalog.metaTemplates).flat(),
+      ...Object.entries(catalog.titleTemplates).flatMap(([style, templates]) =>
+        templates.map((template) => ({ kind: "title", style, ...template })),
+      ),
+      ...Object.entries(catalog.metaTemplates).flatMap(([style, templates]) =>
+        templates.map((template) => ({ kind: "meta", style, ...template })),
+      ),
     ];
-    formulas.forEach(({ formula }) => {
+    const seenFormulas = new Set();
+    formulas.forEach(({ formula, kind, style }) => {
+      const normalizedFormula = formula.toLocaleLowerCase("en-US");
+      if (seenFormulas.has(normalizedFormula)) {
+        context.addIssue({
+          code: "custom",
+          message: `Duplicate template formula: ${formula}`,
+        });
+      }
+      seenFormulas.add(normalizedFormula);
+
+      if (!formula.includes("{PrimaryKeyword}")) {
+        context.addIssue({
+          code: "custom",
+          message: `Template must include {PrimaryKeyword}: ${formula}`,
+        });
+      }
+      const requiresCompetitor =
+        (kind === "title" && style === "comparison") ||
+        (kind === "meta" && style === "decision-support");
+      if (requiresCompetitor && !formula.includes("{Competitor}")) {
+        context.addIssue({
+          code: "custom",
+          message: `Every ${style} ${kind} template must include {Competitor}: ${formula}`,
+        });
+      }
+      const intentPlaceholders =
+        kind === "title"
+          ? [
+              "{IntentActionGerundTitle}",
+              "{IntentActionTitle}",
+              "{IntentTopicTitle}",
+            ]
+          : ["{IntentAction}", "{IntentActionTitle}", "{IntentTopic}"];
+      if (
+        !intentPlaceholders.some((placeholder) => formula.includes(placeholder))
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: `Every ${kind} template must include an intent placeholder: ${formula}`,
+        });
+      }
+      if (kind === "meta" && !formula.includes("{IntentTopic}")) {
+        context.addIssue({
+          code: "custom",
+          message: `Every meta template must include {IntentTopic}: ${formula}`,
+        });
+      }
+      if (
+        kind === "meta" &&
+        !["{IntentAction}", "{IntentActionTitle}"].some((placeholder) =>
+          formula.includes(placeholder),
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: `Every meta template must include an intent action: ${formula}`,
+        });
+      }
+      const requiredTonePlaceholder =
+        kind === "title" ? "{ToneCueTitle}" : "{ToneCue}";
+      if (!formula.includes(requiredTonePlaceholder)) {
+        context.addIssue({
+          code: "custom",
+          message: `Every ${kind} template must include ${requiredTonePlaceholder}: ${formula}`,
+        });
+      }
       for (const match of formula.matchAll(/\{([A-Za-z0-9_]+)\}/g)) {
         if (!allowedPlaceholders.has(match[1])) {
           context.addIssue({
@@ -115,6 +192,13 @@ const catalogSchema = z
             message: `Unknown placeholder {${match[1]}} in: ${formula}`,
           });
         }
+      }
+      const remainingBraces = formula.replace(/\{[A-Za-z0-9_]+\}/g, "");
+      if (/[{}]/.test(remainingBraces)) {
+        context.addIssue({
+          code: "custom",
+          message: `Malformed placeholder in: ${formula}`,
+        });
       }
     });
   });
@@ -129,6 +213,7 @@ const loadCatalog = (catalogPath = defaultCatalogPath) => {
 module.exports = {
   INTENTS,
   META_STYLES,
+  POWER_WORD_CATEGORIES,
   TITLE_STYLES,
   catalogSchema,
   defaultCatalogPath,

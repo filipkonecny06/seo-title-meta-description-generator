@@ -33,7 +33,7 @@ const escapeHtml = (value) =>
     .replace(/'/g, "&#39;");
 
 const highlightKeywords = (text, keywords) => {
-  let html = escapeHtml(text);
+  const source = String(text || "");
   const keywordList = Array.isArray(keywords)
     ? keywords
     : String(keywords || "")
@@ -41,15 +41,25 @@ const highlightKeywords = (text, keywords) => {
         .map((entry) => entry.trim())
         .filter(Boolean);
 
-  keywordList
-    .filter(Boolean)
+  const patterns = [
+    ...new Set(
+      keywordList.map((keyword) => String(keyword).trim()).filter(Boolean),
+    ),
+  ]
     .sort((first, second) => second.length - first.length)
-    .forEach((keyword) => {
-      const regex = new RegExp(`(${escapeRegExp(escapeHtml(keyword))})`, "gi");
-      html = html.replace(regex, "<strong>$1</strong>");
-    });
+    .map(escapeRegExp);
+  if (!patterns.length) return escapeHtml(source);
 
-  return html;
+  const matcher = new RegExp(patterns.join("|"), "gi");
+  const fragments = [];
+  let cursor = 0;
+  for (const match of source.matchAll(matcher)) {
+    fragments.push(escapeHtml(source.slice(cursor, match.index)));
+    fragments.push(`<strong>${escapeHtml(match[0])}</strong>`);
+    cursor = match.index + match[0].length;
+  }
+  fragments.push(escapeHtml(source.slice(cursor)));
+  return fragments.join("");
 };
 
 class SerpPreviewBuilder {
@@ -87,7 +97,7 @@ class SerpPreviewBuilder {
 
     return {
       device: mode,
-      url: escapeHtml(safeUrl),
+      url: safeUrl,
       titleHtml: highlightKeywords(safeTitle, allKeywords),
       metaHtml: highlightKeywords(safeMeta, allKeywords),
       titlePixels,

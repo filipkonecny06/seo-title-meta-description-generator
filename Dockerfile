@@ -1,24 +1,28 @@
-FROM node:22-bookworm-slim AS development
+FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS development
 WORKDIR /app
 
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 RUN npm ci
 
-COPY . .
+COPY --chown=node:node . .
 EXPOSE 3000
+USER node
 CMD ["npm", "run", "dev"]
 
-FROM node:22-bookworm-slim AS production
+FROM development AS migration
+CMD ["npm", "run", "db:migrate"]
+
+FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY src ./src
-COPY migrations ./migrations
-COPY seeders ./seeders
-COPY scripts ./scripts
+COPY --chown=node:node src ./src
 
 EXPOSE 3000
+USER node
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD ["node", "-e", "const port=process.env.PORT||3000;fetch('http://127.0.0.1:'+port+'/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 CMD ["node", "src/server.js"]

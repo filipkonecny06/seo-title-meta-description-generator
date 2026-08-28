@@ -1,7 +1,8 @@
 {
   "name": "seo-title-meta-generator",
   "version": "2.0.0",
-  "description": "Deterministic SEO snippet workshop with transparent optimization heuristics",
+  "private": true,
+  "description": "Deterministic SEO title and meta description drafting tool",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -13,21 +14,19 @@
     "test": "node --test",
     "test:unit": "node --test test/unit/*.test.js",
     "test:integration": "node --test test/integration/*.test.js",
-    "test:coverage": "c8 --include=src/services/** --include=src/catalog/** --include=src/config/env.js --include=src/app.js --check-coverage --lines 80 --functions 80 --branches 70 --reporter=text --reporter=lcov node --test",
+    "test:coverage": "c8 --all --include=src/**/*.js --exclude=src/server.js --exclude=src/config/sequelize-cli.cjs --check-coverage --statements 85 --lines 85 --functions 80 --branches 70 --reporter=text --reporter=lcov --reporter=json-summary node --test && node scripts/checkFileCoverage.js",
+    "audit:production": "npm audit --omit=dev --audit-level=moderate",
     "db:migrate": "sequelize-cli db:migrate --config src/config/sequelize-cli.cjs",
     "db:migrate:undo": "sequelize-cli db:migrate:undo --config src/config/sequelize-cli.cjs",
-    "db:seed": "sequelize-cli db:seed:all --config src/config/sequelize-cli.cjs",
-    "db:seed:undo": "sequelize-cli db:seed:undo:all --config src/config/sequelize-cli.cjs",
-    "db:setup": "npm run db:migrate && npm run catalog:sync",
-    "catalog:validate": "node scripts/catalog.js validate",
-    "catalog:sync": "node scripts/catalog.js sync",
-    "catalog:sync:dry-run": "node scripts/catalog.js sync --dry-run"
+    "db:migrate:undo:all": "sequelize-cli db:migrate:undo:all --config src/config/sequelize-cli.cjs",
+    "db:setup": "npm run db:migrate",
+    "catalog:validate": "node scripts/validateCatalog.js"
   },
   "keywords": [
     "seo",
-    "saas",
-    "title-generator",
-    "meta-description"
+    "metadata",
+    "serp-preview",
+    "express"
   ],
   "author": "Filip Konecny",
   "license": "MIT",
@@ -41,29 +40,29 @@
   "homepage": "https://github.com/filipkonecny06/seo-title-meta-description-generator#readme",
   "packageManager": "npm@11.13.0",
   "engines": {
-    "node": ">=22.0.0"
+    "node": "^22.13.0 || ^24.0.0"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "csrf-sync": "^4.2.1",
-    "dotenv": "^17.2.2",
+    "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-mysql-session": "^3.0.3",
-    "express-rate-limit": "^8.2.1",
+    "express-rate-limit": "^8.6.2",
     "express-session": "^1.19.0",
-    "helmet": "^8.1.0",
-    "mysql2": "^3.17.1",
+    "helmet": "^8.3.0",
+    "mysql2": "^3.24.2",
     "sequelize": "^6.37.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "c8": "^10.1.3",
-    "eslint": "^10.0.2",
-    "globals": "^16.5.0",
-    "nodemon": "^3.1.10",
-    "prettier": "^3.7.4",
+    "c8": "^12.0.0",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
     "sequelize-cli": "^6.6.5",
     "supertest": "^7.2.2"
   },

@@ -1,7 +1,20 @@
-﻿const path = require("path");
+const path = require("path");
 const dotenv = require("dotenv");
+const { parseEnvironmentBoolean } = require("./environmentBoolean");
 
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../../.env"), quiet: true });
+
+const databaseUsesTls = parseEnvironmentBoolean(process.env.DB_SSL, {
+  name: "DB_SSL",
+  defaultValue: false,
+});
+const rejectUnauthorized = parseEnvironmentBoolean(
+  process.env.DB_SSL_REJECT_UNAUTHORIZED,
+  {
+    name: "DB_SSL_REJECT_UNAUTHORIZED",
+    defaultValue: true,
+  },
+);
 
 const base = {
   username: process.env.DB_USER,
@@ -10,25 +23,14 @@ const base = {
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 3306),
   dialect: "mysql",
-  dialectOptions:
-    String(process.env.DB_SSL).toLowerCase() === "true"
-      ? {
-          ssl: {
-            require: true,
-            rejectUnauthorized:
-              String(process.env.DB_SSL_REJECT_UNAUTHORIZED).toLowerCase() !==
-              "false",
-          },
-        }
-      : undefined,
+  dialectOptions: databaseUsesTls
+    ? { ssl: { require: true, rejectUnauthorized } }
+    : undefined,
 };
 
 module.exports = {
   development: base,
-  test: {
-    ...base,
-    database: `${process.env.DB_NAME}_test`,
-  },
+  test: { ...base },
   production: {
     ...base,
   },

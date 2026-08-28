@@ -9,17 +9,127 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+    services:
+      mysql:
+        image: mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
+        env:
+          MYSQL_DATABASE: seo_snippet_test
+          MYSQL_ROOT_PASSWORD: root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot-password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      NODE_ENV: test
+      APP_BASE_URL: http://localhost:3000
+      SESSION_SECRET: ci-runtime-key-8f3c2a91b7d64e50a1
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: seo_snippet_test
+      DB_USER: root
+      DB_PASSWORD: root-password
+      DB_SSL: "false"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 22
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
       - run: npm run catalog:validate
       - run: npm run check
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run db:migrate
+      - run: npm run db:migrate:undo:all
+      - run: npm run db:migrate
+      - run: npm run audit:production
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build production and migration images
+        run: |
+          docker build --target production --tag seo-snippets:production .
+          docker build --target migration --tag seo-snippets:migration .
+      - name: Start MySQL
+        run: |
+          docker network create seo-smoke
+          docker run --detach --name seo-mysql --network seo-smoke \
+            --env MYSQL_DATABASE=seo_snippet_smoke \
+            --env MYSQL_USER=app \
+            --env MYSQL_PASSWORD=app-password \
+            --env MYSQL_ROOT_PASSWORD=root-password \
+            mysql:8.4.11@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb \
+            --character-set-server=utf8mb4 \
+            --collation-server=utf8mb4_unicode_ci
+      - name: Wait for MySQL
+        run: |
+          for attempt in $(seq 1 30); do
+            if docker exec seo-mysql mysqladmin ping -h 127.0.0.1 -proot-password --silent; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs seo-mysql
+          exit 1
+      - name: Apply migrations
+        run: |
+          docker run --rm --network seo-smoke \
+            --env NODE_ENV=production \
+            --env DB_HOST=seo-mysql \
+            --env DB_PORT=3306 \
+            --env DB_NAME=seo_snippet_smoke \
+            --env DB_USER=app \
+            --env DB_PASSWORD=app-password \
+            --env DB_SSL=false \
+            seo-snippets:migration
+      - name: Start production application
+        run: |
+          docker run --detach --name seo-app --network seo-smoke --publish 3100:3100 \
+            --env NODE_ENV=production \
+            --env PORT=3100 \
+            --env APP_BASE_URL=http://localhost:3100 \
+            --env SESSION_SECRET=ci-container-key-8f3c2a91b7d64e50a1 \
+            --env DB_HOST=seo-mysql \
+            --env DB_PORT=3306 \
+            --env DB_NAME=seo_snippet_smoke \
+            --env DB_USER=app \
+            --env DB_PASSWORD=app-password \
+            --env DB_SSL=false \
+            seo-snippets:production
+      - name: Verify liveness and readiness
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3100/health/live \
+              && curl --fail --silent --show-error http://127.0.0.1:3100/health/ready; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs seo-app
+          exit 1
+      - name: Clean up smoke containers
+        if: always()
+        run: |
+          docker rm --force seo-app seo-mysql || true
+          docker network rm seo-smoke || true

@@ -1,6 +1,9 @@
 const bcrypt = require("bcrypt");
 const { loginSchema, registerSchema } = require("../validation/schemas");
 
+const INVALID_PASSWORD_HASH =
+  "$2b$12$jbQxnq8l5trJLrlr4HGWbuf/tZx1nxIiVSxG6vNZj9bIm0LT/0pV6";
+
 const regenerateSession = (req) =>
   new Promise((resolve, reject) => {
     req.session.regenerate((error) => (error ? reject(error) : resolve()));
@@ -43,7 +46,7 @@ class AuthController {
       this.setFlash(
         req,
         "warning",
-        "Use a valid name, email, and password (10–72 bytes).",
+        "Use a valid name, email, and password (at least 10 characters, at most 72 UTF-8 bytes).",
       );
       return res.redirect("/register");
     }
@@ -89,12 +92,12 @@ class AuthController {
     }
 
     try {
-      const user = await this.User.findOne({
+      const user = await this.User.scope("withPassword").findOne({
         where: { email: parsed.data.email },
       });
       const valid = user
         ? await user.validatePassword(parsed.data.password)
-        : false;
+        : await bcrypt.compare(parsed.data.password, INVALID_PASSWORD_HASH);
       if (!valid) {
         this.setFlash(req, "warning", "Invalid email or password.");
         return res.redirect("/login");
