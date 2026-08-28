@@ -18,8 +18,9 @@
         </label>
 
         <label>
-          Secondary Keywords
-          <input type="text" name="secondaryKeywords" id="secondaryKeywords" placeholder="comma separated" maxlength="500" />
+          Secondary Keywords / Alternatives
+          <input type="text" name="secondaryKeywords" id="secondaryKeywords" placeholder="e.g. Squarespace, Wix" maxlength="500" aria-describedby="secondary-keywords-help" />
+          <span id="secondary-keywords-help" class="muted small-text">Add up to 10 comma-separated alternatives, with no more than 100 characters each. Comparison titles and decision-support descriptions use them; the preview highlights them in every style.</span>
         </label>
 
         <label>
@@ -61,6 +62,7 @@
             <option value="friendly">Friendly</option>
           </select>
         </label>
+        <p class="muted small-text">Every formula includes a concise marker for the selected intent and tone.</p>
 
         <label>
           Title Style
@@ -69,7 +71,7 @@
             <option value="how-to">How-to</option>
             <option value="question">Question</option>
             <option value="comparison">Comparison</option>
-            <option value="best/top">Best/Top</option>
+            <option value="guide">Guide</option>
           </select>
         </label>
 
@@ -77,8 +79,8 @@
           Meta Style
           <select name="metaStyle" id="metaStyle">
             <option value="educational">Educational</option>
-            <option value="sales-focused">Sales-focused</option>
-            <option value="benefit-driven">Benefit-driven</option>
+            <option value="decision-support">Decision support</option>
+            <option value="action-oriented">Action-oriented</option>
           </select>
         </label>
 
@@ -87,7 +89,7 @@
           <select name="length" id="length">
             <option value="short">Short</option>
             <option value="medium" selected>Medium</option>
-            <option value="max ctr">Maximum visibility</option>
+            <option value="long">Long</option>
           </select>
         </label>
 
@@ -173,4 +175,13 @@
   </section>
 </main>
 
-<%- include('partials/footer', { pageScript: '/js/generator.js' }) %>
+<%- include('partials/footer', {
+  pageScripts: [
+    '/js/generatorUtilities.js',
+    '/js/generatorApi.js',
+    '/js/generatorExport.js',
+    '/js/generatorView.js',
+    '/js/generatorController.js',
+    '/js/generator.js',
+  ],
+}) %>

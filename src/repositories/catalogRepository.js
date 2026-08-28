@@ -1,34 +1,7 @@
 const { loadCatalog } = require("../catalog/catalogSchema");
 
-class TemplateCatalogRepository {
-  getTitleTemplates() {
-    throw new Error(
-      "TemplateCatalogRepository#getTitleTemplates must be implemented.",
-    );
-  }
-
-  getMetaTemplates() {
-    throw new Error(
-      "TemplateCatalogRepository#getMetaTemplates must be implemented.",
-    );
-  }
-
-  getPowerWords() {
-    throw new Error(
-      "TemplateCatalogRepository#getPowerWords must be implemented.",
-    );
-  }
-
-  getSummary() {
-    throw new Error(
-      "TemplateCatalogRepository#getSummary must be implemented.",
-    );
-  }
-}
-
-class JsonTemplateCatalogRepository extends TemplateCatalogRepository {
+class JsonTemplateCatalogRepository {
   constructor({ catalog, catalogPath } = {}) {
-    super();
     this.catalog = catalog || loadCatalog(catalogPath);
   }
 
@@ -62,35 +35,27 @@ class JsonTemplateCatalogRepository extends TemplateCatalogRepository {
       )
       .sort(
         (first, second) =>
-          second.weight - first.weight || first.word.localeCompare(second.word),
+          second.weight - first.weight ||
+          first.word.localeCompare(second.word, "en-US"),
       );
   }
 
   getSummary() {
-    const titleCountPerIntent = Object.values(
-      this.catalog.titleTemplates,
-    ).flat().length;
+    const titleFormulaCount = Object.values(this.catalog.titleTemplates).flat()
+      .length;
     const metaCount = Object.values(this.catalog.metaTemplates).flat().length;
     const powerWordCount = Object.values(this.catalog.powerWords).flat().length;
 
     return {
       version: this.catalog.version,
-      titleCount: titleCountPerIntent * this.catalog.intents.length,
-      metaCount,
+      titleFormulaCount,
+      metaFormulaCount: metaCount,
       powerWordCount,
-      titleIntentSummary: this.catalog.intents.map((intent) => ({
-        intent,
-        count: titleCountPerIntent,
-      })),
+      supportedIntents: [...this.catalog.intents],
+      titleStyles: Object.keys(this.catalog.titleTemplates),
+      metaStyles: Object.keys(this.catalog.metaTemplates),
     };
-  }
-
-  getCatalog() {
-    return this.catalog;
   }
 }
 
-module.exports = {
-  JsonTemplateCatalogRepository,
-  TemplateCatalogRepository,
-};
+module.exports = { JsonTemplateCatalogRepository };

@@ -95,9 +95,16 @@ const createApp = ({
   if (config.logging) app.use(createRequestLogger(logger));
   app.use(
     express.static(path.join(__dirname, "public"), {
-      maxAge: config.env === "production" ? "1d" : 0,
+      maxAge: 0,
+      setHeaders: (res) => {
+        res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+      },
     }),
   );
+  app.use((_req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
+  });
   app.use(
     express.urlencoded({ extended: false, limit: "32kb", parameterLimit: 50 }),
   );
@@ -163,6 +170,8 @@ const createApp = ({
     standardHeaders: "draft-8",
     legacyHeaders: false,
     skipSuccessfulRequests: true,
+    requestWasSuccessful: (_req, res) =>
+      res.statusCode < 400 && res.getHeader("location") === "/generator",
     handler: (req, res) =>
       res.status(429).render("error", {
         title: "Too Many Attempts",

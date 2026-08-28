@@ -1,7 +1,7 @@
 ﻿<footer class="site-footer">
   <div>
     <strong>Orbit Snippets</strong>
-    <p>Deterministic SEO generation for teams that ship at scale.</p>
+    <p>Deterministic title and description drafting with inspectable rules.</p>
   </div>
   <div class="footer-meta">
     <a href="/generator">Generator</a>
@@ -13,7 +13,11 @@
 </div>
 <script src="/js/main.js" defer></script>
 <script src="/js/csv.js" defer></script>
-<% if (typeof pageScript !== 'undefined' && pageScript) { %>
+<% if (typeof pageScripts !== 'undefined' && pageScripts) { %>
+  <% pageScripts.forEach((script) => { %>
+    <script src="<%= script %>" defer></script>
+  <% }) %>
+<% } else if (typeof pageScript !== 'undefined' && pageScript) { %>
   <script src="<%= pageScript %>" defer></script>
 <% } %>
 </body>

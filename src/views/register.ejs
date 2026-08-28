@@ -4,7 +4,7 @@
 <main class="auth-main" id="main-content">
   <section class="auth-card glass">
     <h1>Create Account</h1>
-    <p>Save winning snippets and build a reusable SEO snippet library.</p>
+    <p>Save generated drafts and build a reusable snippet library.</p>
 
     <form action="/register" method="POST" class="auth-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
@@ -22,7 +22,7 @@
       <label>
         Password
         <input type="password" name="password" autocomplete="new-password" minlength="10" maxlength="72" aria-describedby="password-help" required />
-        <span id="password-help" class="muted small-text">Use 10–72 UTF-8 bytes and a password manager.</span>
+        <span id="password-help" class="muted small-text">Use at least 10 characters, no more than 72 UTF-8 bytes, and a password manager.</span>
       </label>
 
       <button type="submit" class="btn">Create Account</button>

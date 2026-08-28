@@ -17,7 +17,7 @@ const landingFaq = [
   {
     question: "Can I edit the writing rules?",
     answer:
-      "Yes. Templates and weighted words live in one validated JSON catalog that can be reviewed and synchronized manually.",
+      "Yes. Templates and weighted terms live in one validated JSON catalog that can be reviewed and edited directly.",
   },
   {
     question: "Can anonymous users generate snippets?",
@@ -69,7 +69,7 @@ class PageController {
         order: [["createdAt", "DESC"]],
         limit: 30,
       }),
-      this.models.FavoriteTitle.findAll({
+      this.models.FavoriteSnippet.findAll({
         where: { userId: req.session.userId },
         order: [["createdAt", "DESC"]],
         limit: 30,

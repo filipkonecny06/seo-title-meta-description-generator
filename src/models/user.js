@@ -22,7 +22,6 @@ module.exports = (sequelize) => {
       email: {
         type: DataTypes.STRING(180),
         allowNull: false,
-        unique: true,
         validate: {
           isEmail: true,
         },
@@ -41,7 +40,22 @@ module.exports = (sequelize) => {
       sequelize,
       modelName: "User",
       tableName: "users",
-      indexes: [{ unique: true, fields: ["email"] }],
+      defaultScope: {
+        attributes: { exclude: ["passwordHash"] },
+      },
+      scopes: {
+        withPassword: {
+          attributes: [
+            "id",
+            "name",
+            "email",
+            "passwordHash",
+            "role",
+            "createdAt",
+            "updatedAt",
+          ],
+        },
+      },
     },
   );
 

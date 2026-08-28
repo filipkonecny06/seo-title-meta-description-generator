@@ -13,12 +13,22 @@ const checkboxSchema = z.preprocess(
   z.boolean(),
 );
 const optionalText = (maximum) => z.string().trim().max(maximum).default("");
-const secondaryKeywordsSchema = z
-  .union([
-    z.string().trim().max(500),
-    z.array(z.string().trim().min(1).max(100)).max(10),
-  ])
-  .default("");
+const secondaryKeywordListSchema = z
+  .array(z.string().trim().min(1).max(100))
+  .max(10);
+const secondaryKeywordsSchema = z.preprocess((value) => {
+  if (value === undefined || value === null || value === "") return [];
+  if (typeof value !== "string") return value;
+  if (value.length > 500) return value;
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}, secondaryKeywordListSchema);
+const lengthSchema = z.preprocess(
+  (value) => (value === "max ctr" ? "long" : value),
+  z.enum(["short", "medium", "long"]).default("medium"),
+);
 
 const generationInputSchema = z
   .object({
@@ -33,7 +43,7 @@ const generationInputSchema = z
       .default("neutral"),
     titleStyle: z.enum(TITLE_STYLES).default("list"),
     metaStyle: z.enum(META_STYLES).default("educational"),
-    length: z.enum(["short", "medium", "max ctr"]).default("medium"),
+    length: lengthSchema,
     bulkMode: checkboxSchema.default(false),
   })
   .strict();
@@ -82,13 +92,15 @@ const favoriteSchema = z
   })
   .strict();
 
-const passwordSchema = z
-  .string()
-  .min(10)
-  .max(72)
-  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, {
-    message: "Password must be no more than 72 UTF-8 bytes.",
-  });
+const bcryptSafePassword = (minimumLength) =>
+  z
+    .string()
+    .min(minimumLength)
+    .max(72)
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 72, {
+      message: "Password must be no more than 72 UTF-8 bytes.",
+    });
+const passwordSchema = bcryptSafePassword(10);
 const registerSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
@@ -100,7 +112,7 @@ const registerSchema = z
 const loginSchema = z
   .object({
     email: z.string().trim().toLowerCase().email().max(180),
-    password: z.string().min(1).max(72),
+    password: bcryptSafePassword(1),
     _csrf: z.string().optional(),
   })
   .strict();

@@ -12,7 +12,7 @@ describe("OptimizationScorer", () => {
     assert.equal(hasIntentSignal("Somehow this works", "informational"), false);
     assert.equal(hasIntentSignal("How this works", "informational"), true);
     assert.equal(hasIntentSignal("Desktop software", "commercial"), false);
-    assert.equal(hasIntentSignal("Top software", "commercial"), true);
+    assert.equal(hasIntentSignal("Compare software", "commercial"), true);
   });
 
   it("uses catalog weights in the power-word contribution", () => {

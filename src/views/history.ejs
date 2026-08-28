@@ -32,7 +32,7 @@
   </section>
 
   <section class="glass history-section">
-    <h2>Favorite Titles</h2>
+    <h2>Favorite Snippets</h2>
 
     <% if (!favoriteRows.length) { %>
       <p class="empty-state">No favorites saved yet.</p>
@@ -44,6 +44,7 @@
           <h3><%= item.title %></h3>
           <p><%= item.meta || 'No linked meta description' %></p>
           <div class="favorite-meta">
+            <span class="pill"><%= item.kind === 'pair' ? 'Legacy pair' : item.kind %></span>
             <span class="pill"><%= item.badge %></span>
             <span>Optimization score: <%= item.optimizationScore %></span>
           </div>

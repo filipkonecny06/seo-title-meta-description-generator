@@ -272,22 +272,22 @@ button:focus-visible {
   color: #cfd8e5;
 }
 
-.badge-elite {
+.badge-high {
   border-color: rgba(0, 208, 132, 0.5);
   color: #7af0c2;
 }
 
-.badge-strong {
+.badge-medium {
   border-color: rgba(45, 140, 255, 0.45);
   color: #8ab8ff;
 }
 
-.badge-good {
+.badge-low {
   border-color: rgba(245, 166, 35, 0.5);
   color: #ffd18b;
 }
 
-.badge-weak {
+.badge-review {
   border-color: rgba(255, 0, 60, 0.42);
   color: #ff8aa5;
 }
@@ -554,6 +554,41 @@ button:focus-visible {
   flex-wrap: wrap;
   color: #a8b2c5;
   font-size: 0.8rem;
+}
+
+.score-details {
+  margin-top: 0.65rem;
+  color: #cbd5e5;
+  font-size: 0.78rem;
+}
+
+.score-details summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.score-details dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem 0.75rem;
+  margin: 0.55rem 0;
+}
+
+.score-details dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.score-details dt,
+.score-details dd,
+.score-details p {
+  margin: 0;
+}
+
+.score-details dd {
+  color: #ffffff;
 }
 
 .result-actions {

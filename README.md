@@ -1,60 +1,88 @@
 # SEO Title & Meta Description Generator
 
-A deterministic SEO-snippet workshop built with Node.js, Express, MySQL, and
-EJS. It turns an explicit brief into inspectable title and description options
-with transparent optimization heuristics.
+[![CI](https://github.com/filipkonecny06/seo-title-meta-description-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/filipkonecny06/seo-title-meta-description-generator/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-0f766e.svg)](LICENSE)
 
-## Why this project is portfolio-ready
+A deterministic drafting application for SEO titles and meta descriptions.
+It combines a validated JSON formula catalog with explicit scoring and width
+heuristics, then lets authenticated users save generation history and favorite
+individual snippets.
 
-- Clear boundaries: controllers coordinate requests; named services generate,
-  score, and build SERP previews; repositories own catalog access.
-- A versioned JSON catalog makes templates and power words easy to review and
-  edit without changing application logic.
-- Authentication, CSRF protection, session rotation, rate limits, strict CSP,
-  input validation, and ownership checks are implemented and tested.
-- CI runs catalog validation, formatting, linting, coverage-gated tests, and a
-  production dependency audit on every pull request.
+## Capabilities
 
-## Features
+- Produces 10 or 20 unique titles and five meta descriptions from a structured
+  brief.
+- Supports four search intents, four tones, five title styles, three description
+  styles, and three length profiles.
+- Shows the inputs behind each optimization score; the score is a drafting aid,
+  not a traffic or click-through prediction.
+- Estimates desktop and mobile result widths and marks copy that may be
+  truncated by a search interface.
+- Saves server-derived history and idempotent favorites for authenticated users.
+- Exports plain text and CSV while neutralizing spreadsheet formula prefixes.
 
-- Generate titles and descriptions for an intent, audience, location, and
-  style; score the options with an explainable heuristic.
-- Render desktop/mobile SERP previews and compare two candidate titles.
-- Save generation history and favorites for authenticated users.
-- Export outputs as text or CSV (with spreadsheet-formula neutralization).
-- Manage the 80 title templates, 15 meta templates, and 40 power words through
-  `src/catalog/catalog.json`.
+The catalog contains 20 title formulas, 15 description formulas, and 40
+weighted scoring terms. Every formula includes a concise intent action or topic
+marker and a visible tone cue. Selection cycles through formula identities
+before taking another variant from the same formula. Comparison titles and
+decision-support descriptions visibly use supplied alternatives and balance
+them across formula variants. Complete optional clauses provide additional
+variations; the generator does not clip copy or add synthetic numeric suffixes
+to force uniqueness.
 
 ## Architecture
 
 ```text
-browser -> routes -> controllers -> services/repositories -> Sequelize/MySQL
-                                    |
-                                    +-> versioned JSON template catalog
+browser -> routes -> controllers -> services -> Sequelize/MySQL
+                         |              |
+                         |              +-> scoring and width estimates
+                         +-> JSON catalog repository
 ```
 
-`SnippetGenerator`, `OptimizationScorer`, and `SerpPreviewBuilder` are small,
-independently tested services. `JsonTemplateCatalogRepository` isolates the
-editable catalog from the generation workflow.
+`src/catalog/catalog.json` is the only runtime source for formulas and scoring
+terms. `JsonTemplateCatalogRepository` validates and exposes that file.
+Application data in MySQL is limited to users, sessions, generation history,
+and favorite snippets.
 
-## Run locally
+The main responsibilities are separated by concern:
 
-Requires Node.js 22+ and MySQL 8+.
+- `SnippetGenerator` renders and ranks complete candidate copy.
+- `generatorRules` owns intent/tone vocabulary and documented length policies;
+  `candidateSelection` owns formula and alternative balancing; `snippetText`
+  owns token formatting.
+- `OptimizationScorer` calculates the inspectable drafting score.
+- `SerpPreviewBuilder` estimates display width and escapes preview markup.
+- Controller classes validate request boundaries and coordinate persistence.
+
+The browser uses the same boundary: `GeneratorApiClient` owns HTTP requests,
+`GeneratorView` owns DOM rendering, `SnippetExporter` owns file creation, and
+`GeneratorController` coordinates state and events. The entry script only wires
+those components together.
+
+## Requirements
+
+- Node.js 22.13+ or 24.x
+- npm 11
+- MySQL 8.4 or a compatible managed MySQL service
+
+## Local setup
+
+Create the database first, then install and configure the application:
 
 ```bash
+mysql -u root -p -e "CREATE DATABASE seo_snippets CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 npm ci
 cp .env.example .env
 npm run db:migrate
-npm run catalog:sync
 npm run dev
 ```
 
-On Windows PowerShell, replace the `cp` command with
-`Copy-Item .env.example .env`. Set a unique `SESSION_SECRET` of at least 32
-characters and provide your local database settings before starting the app.
+On Windows PowerShell, use `Copy-Item .env.example .env` in place of `cp`.
+Update the database settings and set a unique `SESSION_SECRET` containing at
+least 32 characters before starting the server.
 
-The app listens on `http://localhost:3000` by default. `GET /health/live` is a
-liveness probe and `GET /health/ready` verifies database connectivity.
+The default URL is `http://localhost:3000`. `GET /health/live` checks the
+process, while `GET /health/ready` verifies database connectivity.
 
 ### Docker development environment
 
@@ -62,50 +90,100 @@ liveness probe and `GET /health/ready` verifies database connectivity.
 docker compose up --build
 ```
 
-Docker Compose starts MySQL, runs migrations, synchronizes the catalog, and
-launches the development server. The Compose credentials are intentionally
-local-only defaults; never reuse them in production.
+Compose starts MySQL, applies migrations, and launches the development server.
+Its credentials and session key are local development defaults and must not be
+used for another environment.
 
-## Manual catalog workflow
+## Catalog maintenance
 
-Edit `src/catalog/catalog.json`, then use the checks below:
+1. Edit `src/catalog/catalog.json`.
+2. Validate the complete catalog:
+
+   ```bash
+   npm run catalog:validate
+   ```
+
+3. Run the tests, review representative output, and restart the application.
+
+The validator checks the schema, allowed placeholders, formula uniqueness,
+required primary-keyword, intent, and tone placeholders, and exact scoring-term
+category sizes. No database synchronization step is required.
+
+## Database migrations
+
+Apply all pending changes with:
 
 ```bash
-npm run catalog:validate
-npm run catalog:sync:dry-run
-npm run catalog:sync
+npm run db:migrate
 ```
 
-The first command validates the catalog. The dry run is read-only. The final
-command upserts catalog rows in one database transaction.
+For container deployments, the dedicated migration image includes the CLI and
+migration files while the production image contains runtime dependencies only:
+
+```bash
+docker build --target migration -t seo-snippets:migration .
+docker run --rm --env-file .env seo-snippets:migration
+docker build --target production -t seo-snippets:production .
+```
+
+Run one migration job before replacing application instances. Database rollback
+commands are available for development, but production rollback should follow a
+reviewed release plan and a verified backup.
 
 ## Quality checks
 
 ```bash
+npm run catalog:validate
 npm run check
-npm audit --omit=dev --audit-level=high
+npm run audit:production
 ```
 
-`npm run check` applies no changes: it checks Prettier formatting, ESLint, and
-Node’s test runner with coverage thresholds for core configuration, catalog,
-application, and generation services (80% lines/functions, 70% branches). Use
-`npm run format` only when you intentionally want formatting changes.
+`npm run check` verifies formatting, lint rules, the test suite, aggregate
+coverage, and focused per-file coverage floors for authentication, middleware,
+browser lifecycle, and preview rendering. Coverage is measured across server and
+browser source files; only the executable server bootstrap and the CLI
+configuration adapter are excluded. The generator tests exercise every title
+style, description style, length profile, intent, and tone, including bulk
+uniqueness and clock-independence when the year option is off.
 
-## Security notes
+## Operational and security notes
 
 - Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 - State-changing requests require a synchronizer CSRF token.
 - Successful registration and login rotate the session identifier.
-- Input is schema-validated; API payloads and response bodies are bounded.
-- Auth endpoints and API requests are rate limited; saved resources enforce
-  user ownership server-side.
-- Helmet sets a self-only CSP with per-request nonces; no third-party runtime
-  scripts or fonts are required.
+- Dynamic responses are not cached; unhashed static assets use ETag
+  revalidation so deployments do not leave browsers on stale scripts.
+- Requests are schema-validated and rate limited at authentication and API
+  boundaries.
+- Saved generations are regenerated on the server, and ownership is checked
+  before a favorite is created.
+- The session store uses the same database TLS policy as Sequelize and is
+  explicitly closed during graceful shutdown.
+- Helmet applies a self-only content security policy with request-specific
+  nonces.
 
-For deployment, terminate TLS before the app, configure `TRUST_PROXY` only for
-your known proxy topology, use managed database backups, and run migrations as
-a release step before starting new application instances.
+Terminate TLS before the application, configure `TRUST_PROXY` only for known
+proxy hops, use a managed secret source, monitor the readiness endpoint, and
+maintain tested database backups.
+
+## Limitations
+
+- Scores compare drafts against explicit heuristics; they do not predict search
+  ranking, traffic, or click-through rate.
+- Width measurements approximate rendering and cannot guarantee how a search
+  engine will display a result.
+- Long user-supplied terms may make complete copy exceed a selected character
+  band. Only overflow can use the marked fallback; an under-length selection is
+  treated as a catalog calibration error. The tested normal range is a primary
+  keyword up to 20 characters, audience and location up to 32 characters each,
+  and each secondary keyword up to 40 characters. For comparison titles, the
+  primary keyword plus the longest supplied alternative may total 28 characters
+  for short copy, 35 for medium copy, or 36 for long copy. Every style, intent,
+  tone, and length combination must stay inside its selected band throughout a
+  short-to-boundary input corpus. Longer fields remain accepted, but a result
+  that cannot fit complete prose is explicitly marked as overflow.
+- Every result should receive an editorial and factual review before publishing.
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE)
