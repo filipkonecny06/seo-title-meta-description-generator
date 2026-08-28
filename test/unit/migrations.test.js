@@ -34,6 +34,11 @@ const Sequelize = {
   }),
 };
 
+const indexMutations = (calls) =>
+  calls
+    .filter(({ method }) => method === "addIndex" || method === "removeIndex")
+    .map(({ method, args }) => [method, args[2]?.name ?? args[1]]);
+
 describe("forward migrations", () => {
   it("removes the three unused catalog tables in dependency-safe order", async () => {
     const { calls, queryInterface } = createQueryInterface();
@@ -56,12 +61,6 @@ describe("forward migrations", () => {
       method: "renameTable",
       args: ["favorite_titles", "favorite_snippets"],
     });
-    assert.deepEqual(
-      calls
-        .filter(({ method }) => method === "removeIndex")
-        .map(({ args }) => args[1]),
-      ["favorite_titles_user_idx", "favorite_titles_history_idx"],
-    );
     const kindColumn = calls.find(
       ({ method, args }) => method === "addColumn" && args[1] === "kind",
     );
@@ -81,6 +80,19 @@ describe("forward migrations", () => {
     assert.equal(identityIndex.args[2].unique, true);
   });
 
+  it("creates replacement foreign-key indexes before removing legacy indexes", async () => {
+    const { calls, queryInterface } = createQueryInterface();
+    await migrateFavoriteSnippets.up(queryInterface, Sequelize);
+
+    assert.deepEqual(indexMutations(calls), [
+      ["addIndex", "favorite_snippets_user_idx"],
+      ["addIndex", "favorite_snippets_history_idx"],
+      ["removeIndex", "favorite_titles_user_idx"],
+      ["removeIndex", "favorite_titles_history_idx"],
+      ["addIndex", "favorite_snippets_identity_unique"],
+    ]);
+  });
+
   it("restores legacy favorite names on rollback", async () => {
     const { calls, queryInterface } = createQueryInterface();
     await migrateFavoriteSnippets.down(queryInterface);
@@ -95,6 +107,19 @@ describe("forward migrations", () => {
           method === "addIndex" && args[2]?.name === "favorite_titles_user_idx",
       ),
     );
+  });
+
+  it("restores legacy foreign-key indexes before removing replacements", async () => {
+    const { calls, queryInterface } = createQueryInterface();
+    await migrateFavoriteSnippets.down(queryInterface);
+
+    assert.deepEqual(indexMutations(calls), [
+      ["removeIndex", "favorite_snippets_identity_unique"],
+      ["addIndex", "favorite_titles_user_idx"],
+      ["addIndex", "favorite_titles_history_idx"],
+      ["removeIndex", "favorite_snippets_user_idx"],
+      ["removeIndex", "favorite_snippets_history_idx"],
+    ]);
   });
 
   it("keeps one named users email uniqueness constraint", async () => {
