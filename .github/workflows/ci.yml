@@ -95,7 +95,7 @@ jobs:
           done
           docker logs seo-mysql
           exit 1
-      - name: Apply migrations
+      - name: Set up database
         run: |
           docker run --rm --network seo-smoke \
             --env NODE_ENV=production \

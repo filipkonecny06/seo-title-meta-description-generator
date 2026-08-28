@@ -73,7 +73,7 @@ Create the database first, then install and configure the application:
 mysql -u root -p -e "CREATE DATABASE seo_snippets CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 npm ci
 cp .env.example .env
-npm run db:migrate
+npm run db:setup
 npm run dev
 ```
 
@@ -84,15 +84,30 @@ least 32 characters before starting the server.
 The default URL is `http://localhost:3000`. `GET /health/live` checks the
 process, while `GET /health/ready` verifies database connectivity.
 
+### Portfolio demo account
+
+`npm run db:setup` idempotently creates or repairs a public account that uses
+the same password verification and session flow as every registered user. It
+has the ordinary `user` role and no administrative access:
+
+```text
+Email:    demo@example.com
+Password: OrbitDemo2026!
+```
+
+The login page displays these credentials for portfolio reviewers. Treat its
+saved generations and favorites as public, shared data; never store private
+information in this account.
+
 ### Docker development environment
 
 ```bash
 docker compose up --build
 ```
 
-Compose starts MySQL, applies migrations, and launches the development server.
-Its credentials and session key are local development defaults and must not be
-used for another environment.
+Compose starts MySQL, applies migrations, provisions the demo account, and
+launches the development server. Its database credentials and session key are
+local development defaults and must not be used for another environment.
 
 ## Catalog maintenance
 
@@ -114,8 +129,12 @@ category sizes. No database synchronization step is required.
 Apply all pending changes with:
 
 ```bash
-npm run db:migrate
+npm run db:setup
 ```
+
+This applies schema migrations and then converges the documented demo account
+to its non-admin role and public password. Use `npm run db:migrate` when only
+schema changes are intended, such as migration rollback verification in CI.
 
 For container deployments, the dedicated migration image includes the CLI and
 migration files while the production image contains runtime dependencies only:

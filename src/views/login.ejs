@@ -6,6 +6,21 @@
     <h1>Login</h1>
     <p>Access saved generations, favorites, and export history.</p>
 
+    <aside class="demo-credentials" aria-labelledby="demo-credentials-title">
+      <h2 id="demo-credentials-title">Portfolio demo account</h2>
+      <p>Sign in with this public, non-admin account to review saved features.</p>
+      <dl>
+        <div>
+          <dt>Email</dt>
+          <dd><code><%= demoAccount.email %></code></dd>
+        </div>
+        <div>
+          <dt>Password</dt>
+          <dd><code><%= demoAccount.password %></code></dd>
+        </div>
+      </dl>
+    </aside>
+
     <%# Authentication posts use the server-issued synchronizer token. %>
     <form action="/login" method="POST" class="auth-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />

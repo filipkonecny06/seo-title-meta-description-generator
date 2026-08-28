@@ -1,11 +1,11 @@
 services:
-  # Local app startup applies pending schema changes before enabling file watching.
+  # Local startup prepares the schema and demo account before file watching.
   app:
     build:
       context: .
       target: development
     command: >
-      sh -c "npm run db:migrate && npm run dev"
+      sh -c "npm run db:setup && npm run dev"
     ports:
       - "3000:3000"
     environment:

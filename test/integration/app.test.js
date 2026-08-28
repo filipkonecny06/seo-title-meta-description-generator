@@ -112,6 +112,10 @@ describe("application security boundaries", () => {
     const loginPage = await agent.get("/login").expect(200);
     assert.equal(loginPage.headers["cache-control"], "no-store");
     assert.ok(readCsrfToken(loginPage.text));
+    assert.match(loginPage.text, /Portfolio demo account/);
+    assert.match(loginPage.text, /demo@example\.com/);
+    assert.match(loginPage.text, /OrbitDemo2026!/);
+    assert.match(loginPage.text, /action="\/login" method="POST"/);
 
     const { loginResponse } = await login(agent, user);
     assert.equal(loginResponse.headers["cache-control"], "no-store");

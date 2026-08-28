@@ -1,3 +1,5 @@
+const { demoAccount } = require("../config/demoAccount");
+
 const landingFaq = [
   {
     question: "What makes the output repeatable?",
@@ -54,7 +56,7 @@ class PageController {
 
   renderLogin(req, res) {
     if (req.session.userId) return res.redirect("/generator");
-    return res.render("login", { title: "Login" });
+    return res.render("login", { title: "Login", demoAccount });
   }
 
   renderRegister(req, res) {

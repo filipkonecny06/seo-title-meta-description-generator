@@ -10,9 +10,9 @@ EXPOSE 3000
 USER node
 CMD ["npm", "run", "dev"]
 
-# Migrations run as a separate release task rather than during production startup.
+# Schema and demo-account setup run as a release task, not at app startup.
 FROM development AS migration
-CMD ["npm", "run", "db:migrate"]
+CMD ["npm", "run", "db:setup"]
 
 # Production contains runtime dependencies and application code only.
 FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS production
