@@ -1,5 +1,6 @@
 ﻿"use strict";
 
+/** Creates the original database-backed meta catalog retained for rollback support. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("meta_templates", {

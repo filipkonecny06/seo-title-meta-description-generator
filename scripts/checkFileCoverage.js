@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+/** Enforces risk-based per-file coverage floors in addition to global thresholds. */
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -58,11 +59,16 @@ const COVERAGE_FLOORS = Object.freeze({
 
 const normalizePath = (filePath) => filePath.split(path.sep).join("/");
 
+/** Finds one coverage record regardless of operating-system path separators. */
 const findFileCoverage = (summary, target) =>
   Object.entries(summary).find(([filePath]) =>
     normalizePath(filePath).endsWith(target),
   )?.[1];
 
+/**
+ * @param {string} summaryPath c8 JSON summary path.
+ * @throws {Error} When a guarded file is missing or below any configured floor.
+ */
 const checkFileCoverage = (
   summaryPath = path.resolve("coverage/coverage-summary.json"),
 ) => {

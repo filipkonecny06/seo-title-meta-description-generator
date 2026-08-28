@@ -2,6 +2,7 @@
 <%- include('partials/header') %>
 
 <main class="error-main" id="main-content">
+  <%# The centralized error handler supplies a deliberately public, escaped message. %>
   <section class="glass error-card">
     <p class="eyebrow">Error <%= status %></p>
     <h1>Request Could Not Be Completed</h1>

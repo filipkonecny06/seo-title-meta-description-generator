@@ -1,3 +1,4 @@
+/** Installs accessible flash-message and toast feedback for server-rendered pages. */
 (function attachUiFeedback(root, factory) {
   const exported = factory();
   if (typeof module === "object" && module.exports) {
@@ -8,6 +9,7 @@
 })(typeof globalThis === "object" ? globalThis : this, () => {
   const TOAST_TYPES = new Set(["info", "success", "warning", "error"]);
 
+  /** Owns transient UI messages and their cleanup timers. */
   class UiFeedbackController {
     constructor({
       window,
@@ -22,6 +24,7 @@
       this.stack = null;
     }
 
+    /** Connects one live region and exposes the page-level toast boundary. */
     connect() {
       const flash = this.document.querySelector("[data-flash]");
       if (flash) {
@@ -40,6 +43,7 @@
       return this;
     }
 
+    /** Creates a text-only toast so message content can never inject markup. */
     showToast(message, type = "info") {
       const normalizedType = TOAST_TYPES.has(type) ? type : "info";
       const toast = this.document.createElement("div");

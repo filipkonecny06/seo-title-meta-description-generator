@@ -1,9 +1,11 @@
+/** Handles credential verification and secure session lifecycle transitions. */
 const bcrypt = require("bcrypt");
 const { loginSchema, registerSchema } = require("../validation/schemas");
 
 const INVALID_PASSWORD_HASH =
   "$2b$12$jbQxnq8l5trJLrlr4HGWbuf/tZx1nxIiVSxG6vNZj9bIm0LT/0pV6";
 
+// Express-session exposes callbacks; these adapters keep controller workflows awaitable.
 const regenerateSession = (req) =>
   new Promise((resolve, reject) => {
     req.session.regenerate((error) => (error ? reject(error) : resolve()));
@@ -19,6 +21,7 @@ const destroySession = (req) =>
     req.session.destroy((error) => (error ? reject(error) : resolve()));
   });
 
+/** HTTP adapter for registration, login, logout, and session ownership. */
 class AuthController {
   constructor({ User, sessionCookieName }) {
     this.User = User;
@@ -32,6 +35,7 @@ class AuthController {
     req.session.flash = { type, message };
   }
 
+  /** Regenerates the identifier before attaching identity to prevent session fixation. */
   async establishSession(req, user, message) {
     await regenerateSession(req);
     req.session.userId = user.id;
@@ -40,6 +44,7 @@ class AuthController {
     await saveSession(req);
   }
 
+  /** Validates and creates a new account, then signs it in. */
   async register(req, res, next) {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -72,6 +77,7 @@ class AuthController {
       );
       return res.redirect("/generator");
     } catch (error) {
+      // The unique constraint remains authoritative if registrations race.
       if (error.name === "SequelizeUniqueConstraintError") {
         this.setFlash(
           req,
@@ -84,6 +90,7 @@ class AuthController {
     }
   }
 
+  /** Verifies credentials without revealing whether the supplied email exists. */
   async login(req, res, next) {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -95,6 +102,7 @@ class AuthController {
       const user = await this.User.scope("withPassword").findOne({
         where: { email: parsed.data.email },
       });
+      // A fixed comparison equalizes the expensive password path for unknown emails.
       const valid = user
         ? await user.validatePassword(parsed.data.password)
         : await bcrypt.compare(parsed.data.password, INVALID_PASSWORD_HASH);
@@ -110,6 +118,7 @@ class AuthController {
     }
   }
 
+  /** Destroys server-side session state before clearing the browser cookie. */
   async logout(req, res, next) {
     try {
       await destroySession(req);

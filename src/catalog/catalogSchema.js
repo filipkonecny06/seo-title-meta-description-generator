@@ -1,3 +1,4 @@
+/** Defines and loads the version-controlled template catalog contract. */
 const fs = require("node:fs");
 const path = require("node:path");
 const { z } = require("zod");
@@ -12,6 +13,7 @@ const TITLE_STYLES = ["list", "how-to", "question", "comparison", "guide"];
 const META_STYLES = ["educational", "decision-support", "action-oriented"];
 const POWER_WORD_CATEGORIES = ["clarity", "action", "format", "evaluation"];
 
+// A closed placeholder vocabulary turns template typos into startup failures.
 const allowedPlaceholders = new Set([
   "Audience",
   "AudienceTitle",
@@ -90,6 +92,7 @@ const catalogSchema = z
   })
   .strict()
   .superRefine((catalog, context) => {
+    // Cross-entry rules protect generation quality beyond individual field types.
     if (new Set(catalog.intents).size !== INTENTS.length) {
       context.addIssue({
         code: "custom",
@@ -205,6 +208,14 @@ const catalogSchema = z
 
 const defaultCatalogPath = path.join(__dirname, "catalog.json");
 
+/**
+ * Reads and validates the complete catalog before it enters the domain layer.
+ * Synchronous I/O is intentional because this runs once during startup or CLI use.
+ *
+ * @param {string} catalogPath JSON catalog path.
+ * @returns {object} Validated catalog data.
+ * @throws {Error|import("zod").ZodError} For unreadable, malformed, or invalid catalogs.
+ */
 const loadCatalog = (catalogPath = defaultCatalogPath) => {
   const content = fs.readFileSync(catalogPath, "utf8");
   return catalogSchema.parse(JSON.parse(content));

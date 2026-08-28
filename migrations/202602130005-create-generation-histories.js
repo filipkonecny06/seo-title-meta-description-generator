@@ -1,5 +1,6 @@
 ﻿"use strict";
 
+/** Stores each user's input configuration, candidate sets, and selected snippets. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("generation_histories", {
@@ -17,6 +18,7 @@ module.exports = {
           key: "id",
         },
         onUpdate: "CASCADE",
+        // A deleted account must not leave personal generation history behind.
         onDelete: "CASCADE",
       },
       primaryKeyword: {

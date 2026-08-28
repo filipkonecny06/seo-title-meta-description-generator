@@ -1,3 +1,4 @@
+/** Coordinates deterministic template expansion, selection, scoring, and preview metadata. */
 const { candidateDistance, selectCandidates } = require("./candidateSelection");
 const {
   DEFAULT_COMPETITORS,
@@ -32,6 +33,7 @@ const splitKeywords = (value) => {
   return entries.map(safeString).filter(Boolean);
 };
 
+/** Converts supported form and JSON representations into one domain input shape. */
 const normalizeInput = (input = {}) => ({
   primaryKeyword: safeString(input.primaryKeyword),
   secondaryKeywords: splitKeywords(input.secondaryKeywords),
@@ -46,6 +48,7 @@ const normalizeInput = (input = {}) => ({
   bulkMode: normalizeBoolean(input.bulkMode),
 });
 
+/** Reports whether the brief falls within the catalog's guaranteed length range. */
 const isNormalInput = (config) => {
   const targets = config.secondaryKeywords.length
     ? config.secondaryKeywords
@@ -68,6 +71,7 @@ const isNormalInput = (config) => {
   );
 };
 
+// This small, stable hash is a repeatability seed; it is not used for security.
 const hashString = (input) => {
   let hash = 0;
   for (const character of safeString(input)) {
@@ -129,6 +133,7 @@ const buildTextVariants = (text, type) => {
   return variants;
 };
 
+/** Generates inspectable title and meta candidates from a validated catalog. */
 class SnippetGenerator {
   constructor({ catalogRepository, scorer, previewBuilder, clock } = {}) {
     if (!catalogRepository) {
@@ -140,6 +145,16 @@ class SnippetGenerator {
     this.clock = clock || (() => new Date());
   }
 
+  /**
+   * Produces a repeatable result set while the catalog and, when included, the
+   * effective year remain unchanged.
+   *
+   * @param {object} input Validated or validation-compatible generation input.
+   * @returns {Promise<object>} Generated snippets, scoring details, and summary.
+   * @throws {Error} If the keyword or matching templates are missing, too few
+   * distinct candidates can be built, a result falls below the target minimum,
+   * or a normal-range brief produces an out-of-band result.
+   */
   async generate(input) {
     const config = normalizeInput(input);
     if (!config.primaryKeyword) throw new Error("Primary keyword is required.");
@@ -165,6 +180,7 @@ class SnippetGenerator {
     const seedInput = config.includeYear
       ? { ...config, currentYear }
       : { ...config };
+    // The year changes rendered text and selection only when the user requests it.
     const baseSeed = hashString(JSON.stringify(seedInput));
     const titleCount = config.bulkMode ? 20 : 10;
     const titleProfile = LENGTH_PROFILES[config.length].title;
@@ -212,11 +228,13 @@ class SnippetGenerator {
         (candidate) => candidate.text.length < metaProfile.min,
       );
     if (hasUnderlengthFallback) {
+      // Padding with empty prose would satisfy length numerically but produce poor drafts.
       throw new Error(
         "The catalog could not satisfy the selected character band's minimum without incomplete padding.",
       );
     }
     if ((titleFallback || metaFallback) && isNormalInput(config)) {
+      // A normal-range miss indicates a catalog regression rather than difficult user input.
       throw new Error(
         "The catalog could not satisfy the selected character band for an input inside the documented normal range.",
       );
@@ -311,6 +329,7 @@ class SnippetGenerator {
     };
   }
 
+  /** Builds an intentionally oversized pool so selection can balance length and variety. */
   buildCandidatePool({
     type,
     config,
@@ -342,6 +361,7 @@ class SnippetGenerator {
     return candidates;
   }
 
+  /** Maps one deterministic seed to all placeholders required by a template. */
   buildContext(config, seed, currentYear) {
     const topicAngle = pickFrom(TOPIC_ANGLES, seed + 1);
     const toneCue = TONE_CUES[config.tone] || TONE_CUES.neutral;

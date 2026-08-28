@@ -1,3 +1,4 @@
+/** Translates validated API requests into generation and persistence operations. */
 const { AppError } = require("../errors/AppError");
 const {
   favoriteSchema,
@@ -6,6 +7,7 @@ const {
   saveGenerationSchema,
 } = require("../validation/schemas");
 
+/** Normalizes JSON columns because Sequelize drivers may return parsed values or strings. */
 const parseJsonColumn = (value) => {
   if (typeof value !== "string") return value;
   try {
@@ -15,6 +17,7 @@ const parseJsonColumn = (value) => {
   }
 };
 
+/** HTTP adapter for snippet generation, previewing, and user-owned persistence. */
 class ApiController {
   constructor({ models, snippetGenerator, previewBuilder, catalogRepository }) {
     this.models = models;
@@ -29,17 +32,23 @@ class ApiController {
     this.history = this.history.bind(this);
   }
 
+  /** Validates a brief and returns generated snippets without persisting them. */
   async generate(req, res) {
     const input = generationInputSchema.parse(req.body);
     const payload = await this.snippetGenerator.generate(input);
     return res.json({ data: payload });
   }
 
+  /** Returns escaped preview markup and display measurements for supplied copy. */
   preview(req, res) {
     const input = previewInputSchema.parse(req.body);
     return res.json({ data: this.previewBuilder.build(input) });
   }
 
+  /**
+   * Regenerates from the validated configuration before saving. Client-supplied
+   * result text and scores are never trusted as authoritative history data.
+   */
   async save(req, res) {
     const input = saveGenerationSchema.parse(req.body);
     const generated = await this.snippetGenerator.generate(input.config);
@@ -65,6 +74,7 @@ class ApiController {
     });
   }
 
+  /** Saves one item only when it belongs to a history row owned by this session. */
   async favorite(req, res) {
     const input = favoriteSchema.parse(req.body);
     const history = await this.models.GenerationHistory.findOne({
@@ -96,6 +106,7 @@ class ApiController {
       kind: input.type,
       itemKey: item.id,
     };
+    // The database unique index makes repeated or concurrent favorite requests idempotent.
     const [row, created] = await this.models.FavoriteSnippet.findOrCreate({
       where: identity,
       defaults: {
@@ -119,10 +130,12 @@ class ApiController {
     });
   }
 
+  /** Returns public catalog metadata, never the mutable repository internals. */
   templates(req, res) {
     return res.json({ data: this.catalogRepository.getSummary() });
   }
 
+  /** Lists only history owned by the authenticated session user. */
   async history(req, res) {
     const rows = await this.models.GenerationHistory.findAll({
       where: { userId: req.session.userId },

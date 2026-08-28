@@ -1,6 +1,13 @@
+/** Strict parsing for boolean environment variables shared by app and CLI. */
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
 const FALSE_VALUES = new Set(["0", "false", "no", "off"]);
 
+/**
+ * @param {unknown} value Raw environment value.
+ * @param {object} options Name used in errors and an optional missing-value default.
+ * @returns {boolean} Parsed boolean value.
+ * @throws {TypeError} When the value is missing or outside the accepted vocabulary.
+ */
 const parseEnvironmentBoolean = (
   value,
   { name = "Boolean environment value", defaultValue } = {},

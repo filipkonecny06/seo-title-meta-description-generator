@@ -1,3 +1,7 @@
+/**
+ * Central generation vocabulary and length policies. These values are domain
+ * rules, kept separate from orchestration so they remain easy to review.
+ */
 const DEFAULT_COMPETITORS = ["Option B", "Option C", "Option D", "Other"];
 const DEFAULT_NUMBERS = [3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 21, 25];
 const TOPIC_ANGLES = [
@@ -116,6 +120,7 @@ const LENGTH_PROFILES = {
   medium: { title: { min: 50, max: 60 }, meta: { min: 135, max: 155 } },
   long: { title: { min: 53, max: 61 }, meta: { min: 145, max: 160 } },
 };
+// Bounds define the input range for which every requested length band is guaranteed.
 const NORMAL_INPUT_LIMITS = Object.freeze({
   primaryKeyword: 20,
   audience: 32,

@@ -1,5 +1,6 @@
 ﻿const { DataTypes, Model } = require("sequelize");
 
+/** Defines generation snapshots owned by one user. */
 module.exports = (sequelize) => {
   class GenerationHistory extends Model {}
 

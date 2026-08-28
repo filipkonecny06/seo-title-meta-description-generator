@@ -1,5 +1,6 @@
 "use strict";
 
+/** Evolves paired favorites into individually identifiable title or meta favorites. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.renameTable("favorite_titles", "favorite_snippets");
@@ -32,6 +33,8 @@ module.exports = {
       "favorite_snippets",
       ["userId", "generationHistoryId", "kind", "itemKey"],
       {
+        // MySQL permits duplicate unique-key rows containing NULL. This guards
+        // per-item identity only while both history and item identifiers exist.
         unique: true,
         name: "favorite_snippets_identity_unique",
       },

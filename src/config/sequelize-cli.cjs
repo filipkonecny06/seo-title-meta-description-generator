@@ -1,9 +1,11 @@
+/** Sequelize CLI configuration kept consistent with the runtime DB settings. */
 const path = require("path");
 const dotenv = require("dotenv");
 const { parseEnvironmentBoolean } = require("./environmentBoolean");
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env"), quiet: true });
 
+// CLI commands run outside app startup, so their environment flags are parsed here.
 const databaseUsesTls = parseEnvironmentBoolean(process.env.DB_SSL, {
   name: "DB_SSL",
   defaultValue: false,

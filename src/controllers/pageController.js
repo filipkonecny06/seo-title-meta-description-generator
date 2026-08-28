@@ -62,6 +62,7 @@ class PageController {
     return res.render("register", { title: "Create Account" });
   }
 
+  /** Loads independent history collections concurrently for the authenticated user. */
   async renderHistory(req, res) {
     const [historyRows, favoriteRows] = await Promise.all([
       this.models.GenerationHistory.findAll({

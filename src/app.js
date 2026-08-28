@@ -1,3 +1,7 @@
+/**
+ * Builds the Express application and composes its HTTP, security, and domain
+ * dependencies without opening a network port.
+ */
 const crypto = require("node:crypto");
 const path = require("node:path");
 const express = require("express");
@@ -23,12 +27,26 @@ const { SnippetGenerator } = require("./services/generatorService");
 const { OptimizationScorer } = require("./services/scoringService");
 const { SerpPreviewBuilder } = require("./services/serpService");
 
+/**
+ * Fails startup before middleware is registered when security-critical
+ * application configuration is missing.
+ *
+ * @param {object} config Validated runtime configuration.
+ * @throws {Error} When the session secret is absent or too short.
+ */
 const assertApplicationConfig = (config) => {
   if (!config?.session?.secret || config.session.secret.length < 32) {
     throw new Error("A session secret of at least 32 characters is required.");
   }
 };
 
+/**
+ * Creates an application with explicit infrastructure dependencies so tests
+ * can exercise the same middleware stack without starting the server.
+ *
+ * @param {object} dependencies Application dependencies and configuration.
+ * @returns {import("express").Express} Configured Express application.
+ */
 const createApp = ({
   config,
   models,
@@ -64,6 +82,8 @@ const createApp = ({
   app.set("view engine", "ejs");
   app.set("views", path.join(__dirname, "views"));
 
+  // The per-response nonce permits the landing page's inline JSON-LD while
+  // arbitrary inline scripts remain blocked.
   app.use((req, res, next) => {
     res.locals.cspNonce = crypto.randomBytes(16).toString("base64");
     res.locals.csrfToken = "";
@@ -102,6 +122,7 @@ const createApp = ({
     }),
   );
   app.use((_req, res, next) => {
+    // Authenticated and generated content must not be reused from shared caches.
     res.set("Cache-Control", "no-store");
     next();
   });
@@ -139,11 +160,14 @@ const createApp = ({
   app.use((req, res, next) => {
     res.locals.currentUser = req.session.user || null;
     res.locals.flash = req.session.flash || null;
+    // Flash is one-request state: the next request through this middleware
+    // consumes it, even when that request does not render a page.
     if (req.session.flash) delete req.session.flash;
     next();
   });
 
   const { csrfSynchronisedProtection, generateToken } = csrfSync({
+    // Forms and JSON clients carry the same token through transport-appropriate fields.
     getTokenFromRequest: (req) =>
       req.is("application/x-www-form-urlencoded")
         ? req.body._csrf
@@ -169,6 +193,7 @@ const createApp = ({
     limit: config.rateLimit.authMax,
     standardHeaders: "draft-8",
     legacyHeaders: false,
+    // Successful authentication should not consume the failed-attempt budget.
     skipSuccessfulRequests: true,
     requestWasSuccessful: (_req, res) =>
       res.statusCode < 400 && res.getHeader("location") === "/generator",

@@ -1,5 +1,7 @@
+/** Defines user-owned favorites, including legacy pairs and per-item snippets. */
 const { DataTypes, Model } = require("sequelize");
 
+/** @returns {typeof Model} FavoriteSnippet model bound to the supplied connection. */
 module.exports = (sequelize) => {
   class FavoriteSnippet extends Model {}
 
@@ -70,6 +72,7 @@ module.exports = (sequelize) => {
         },
       ],
       validate: {
+        // Legacy pairs may omit an item key; per-item rows identify their source candidate.
         itemKeyRequiredForSnippet() {
           if (this.kind !== "pair" && !this.itemKey) {
             throw new Error("A title or meta favorite requires an item key.");

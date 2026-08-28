@@ -1,11 +1,17 @@
+/** Maps internal request failures to safe HTML or JSON responses. */
 const { ZodError } = require("zod");
 
+/** Converts unmatched routes into the centralized error pipeline. */
 const notFoundHandler = (req, res, next) => {
   const error = new Error("Route not found");
   error.status = 404;
   next(error);
 };
 
+/**
+ * Creates the terminal Express error handler. Internal details are logged
+ * server-side but never exposed in 5xx responses.
+ */
 const createErrorHandler =
   ({ logger = console } = {}) =>
   (error, req, res, next) => {
@@ -38,6 +44,7 @@ const createErrorHandler =
             ? "Request validation failed."
             : error.message;
 
+    // API paths and explicit JSON clients receive a stable machine-readable shape.
     if (
       req.path.startsWith("/api") ||
       req.accepts(["json", "html"]) === "json"

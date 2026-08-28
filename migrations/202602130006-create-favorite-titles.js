@@ -1,5 +1,6 @@
 ﻿"use strict";
 
+/** Creates the original paired-favorite table evolved by later migrations. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("favorite_titles", {
@@ -27,6 +28,7 @@ module.exports = {
           key: "id",
         },
         onUpdate: "CASCADE",
+        // Favorites remain usable if their optional source history is removed.
         onDelete: "SET NULL",
       },
       title: {

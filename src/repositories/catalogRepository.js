@@ -1,10 +1,16 @@
+/** Adapts validated catalog JSON to the read-only interface used by services. */
 const { loadCatalog } = require("../catalog/catalogSchema");
 
+/**
+ * Owns template lookup and identifiers that are deterministic for the loaded
+ * catalog version; inserting or reordering formulas can change later IDs.
+ */
 class JsonTemplateCatalogRepository {
   constructor({ catalog, catalogPath } = {}) {
     this.catalog = catalog || loadCatalog(catalogPath);
   }
 
+  /** Returns title-template records for one supported intent and style. */
   getTitleTemplates(intent, style) {
     if (!this.catalog.intents.includes(intent)) {
       return [];
@@ -20,6 +26,7 @@ class JsonTemplateCatalogRepository {
     );
   }
 
+  /** Returns meta-template records for one supported style. */
   getMetaTemplates(style) {
     return (this.catalog.metaTemplates[style] || []).map((template, index) => ({
       id: `${style}:${index + 1}`,
@@ -28,7 +35,9 @@ class JsonTemplateCatalogRepository {
     }));
   }
 
+  /** Flattens and deterministically ranks weighted scoring terms. */
   getPowerWords() {
+    // Stable tie-breaking keeps identical inputs repeatable across executions.
     return Object.entries(this.catalog.powerWords)
       .flatMap(([category, entries]) =>
         entries.map((entry) => ({ category, ...entry })),
@@ -40,6 +49,7 @@ class JsonTemplateCatalogRepository {
       );
   }
 
+  /** Returns counts and supported options suitable for the public API. */
   getSummary() {
     const titleFormulaCount = Object.values(this.catalog.titleTemplates).flat()
       .length;

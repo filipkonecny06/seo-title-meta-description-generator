@@ -1,5 +1,6 @@
 "use strict";
 
+/** Creates the durable session schema managed explicitly by migrations. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("sessions", {

@@ -1,4 +1,5 @@
 version: 2
+# Keep runtime, tooling, CI actions, and base images on independent review tracks.
 updates:
   - package-ecosystem: npm
     directory: /

@@ -1,3 +1,4 @@
+/** Normalizes user text and renders validated catalog formulas. */
 const KNOWN_TERMS = new Map([
   ["api", "API"],
   ["b2b", "B2B"],
@@ -17,6 +18,7 @@ const safeString = (value) => String(value ?? "").trim();
 const titleCaseToken = (token) => {
   const known = KNOWN_TERMS.get(token.toLowerCase());
   if (known) return known;
+  // Preserve mixed-case brands and initialisms that are not in the known-term map.
   if (/[a-z][A-Z]|[A-Z].*[A-Z]/.test(token)) return token;
   return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
 };
@@ -42,6 +44,10 @@ const removeEmptyYearClause = (formula, year) => {
     .replace(/\{Year\}/g, "");
 };
 
+/**
+ * Replaces catalog placeholders and removes punctuation left by an omitted year.
+ * Catalog validation guarantees that formulas use only supported placeholders.
+ */
 const applyTemplate = (formula, context) =>
   normalizeWhitespace(
     removeEmptyYearClause(safeString(formula), context.Year).replace(

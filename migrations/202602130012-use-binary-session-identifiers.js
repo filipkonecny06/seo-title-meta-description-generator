@@ -1,5 +1,6 @@
 "use strict";
 
+/** Makes opaque session identifiers case-sensitive at the storage boundary. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.changeColumn("sessions", "session_id", {

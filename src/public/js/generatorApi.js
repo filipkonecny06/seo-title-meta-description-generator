@@ -15,6 +15,13 @@
       this.fetchImplementation = fetchImplementation;
     }
 
+    /**
+     * @param {string} path Same-origin API path.
+     * @param {object} payload JSON request body.
+     * @param {object} options Optional cancellation signal.
+     * @returns {Promise<object>} Parsed successful response body.
+     * @throws {Error} For network, cancellation, HTTP, or malformed JSON failures.
+     */
     async post(path, payload, { signal } = {}) {
       const response = await this.fetchImplementation(path, {
         method: "POST",
@@ -30,6 +37,7 @@
         body = await response.json();
       } catch (error) {
         if (error?.name === "AbortError") throw error;
+        // Successful non-JSON responses violate the API contract and must surface clearly.
         if (response.ok) {
           throw new Error("Server returned invalid JSON.", { cause: error });
         }

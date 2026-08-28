@@ -1,3 +1,4 @@
+/** Renders generator state and translates DOM events into controller actions. */
 (function attachGeneratorView(root, factory) {
   const dependencies =
     typeof module === "object" && module.exports
@@ -25,6 +26,8 @@
       intentSignal: "Intent signal",
     };
 
+    // Strings that may contain user input are escaped; server-generated IDs and
+    // numeric metrics are inserted directly.
     const renderScoreDetails = (item) => {
       const breakdown = Object.entries(item.scoreBreakdown || {})
         .map(
@@ -126,6 +129,7 @@
       `;
     };
 
+    /** Owns generator-page DOM queries, event binding, and accessible state updates. */
     class GeneratorView {
       constructor(document) {
         this.document = document;
@@ -158,12 +162,14 @@
           ].map((id) => [id, document.getElementById(id)]),
         );
         if (!this.form || Object.values(this.elements).some((item) => !item)) {
+          // Fail during bootstrap rather than producing partial, misleading interactions.
           throw new Error("Generator page markup is incomplete.");
         }
         this.persistenceBusy = false;
         this.generationBusy = false;
       }
 
+      /** Returns the raw form boundary shape expected by the API validation schema. */
       getPayload() {
         return {
           primaryKeyword: this.form.primaryKeyword.value.trim(),
@@ -193,6 +199,7 @@
         return button ? { ...button.dataset } : null;
       }
 
+      /** Binds stable container listeners; result-card actions use event delegation. */
       bind(handlers) {
         this.form.addEventListener("submit", (event) => {
           event.preventDefault();
@@ -226,6 +233,7 @@
         this.form.pageUrl.addEventListener("change", handlers.refreshPreview);
       }
 
+      /** Rebuilds result panels from current state using escaped card templates. */
       render(state) {
         this.elements["title-results"].innerHTML = state.titles.length
           ? state.titles
@@ -274,6 +282,7 @@
         this.elements["compare-panel"].innerHTML = html;
       }
 
+      /** Applies server-produced preview markup containing only escaped text and `strong`. */
       updatePreview(preview, state) {
         this.elements["preview-url"].textContent =
           preview.url || "https://www.yourdomain.com";
@@ -324,6 +333,7 @@
         this.applyPersistenceState();
       }
 
+      /** Keeps save and favorite actions disabled while related writes are unresolved. */
       applyPersistenceState() {
         const busy = this.persistenceBusy || this.generationBusy;
         const saveButton = this.elements["save-generation-btn"];

@@ -1,5 +1,6 @@
 ﻿"use strict";
 
+/** Establishes the account table and database-enforced email uniqueness. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("users", {

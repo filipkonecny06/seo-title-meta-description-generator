@@ -1,5 +1,6 @@
 ﻿"use strict";
 
+/** Creates the original database-backed title catalog retained for migration history. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("title_templates", {

@@ -11,6 +11,7 @@
   --info: #2d8cff;
 }
 
+/* Global layout foundation and predictable element sizing. */
 * {
   box-sizing: border-box;
 }
@@ -32,6 +33,7 @@ body {
     sans-serif;
 }
 
+/* Keyboard and screen-reader accessibility primitives. */
 .skip-link {
   position: fixed;
   top: 0.5rem;
@@ -65,6 +67,7 @@ a {
   text-decoration: none;
 }
 
+/* Decorative layers remain behind content and ignore pointer interaction. */
 .backdrop-gradient {
   position: fixed;
   inset: -20%;
@@ -108,6 +111,7 @@ a {
   }
 }
 
+/* Shared page shell and navigation. */
 .site-frame {
   width: min(1280px, 94vw);
   margin: 2rem auto;
@@ -192,6 +196,7 @@ a {
     transform 0.4s ease;
 }
 
+/* Reusable surfaces, controls, and semantic status treatments. */
 .glass {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(
@@ -292,6 +297,7 @@ button:focus-visible {
   color: #ff8aa5;
 }
 
+/* Landing-page feature and workflow layout. */
 .landing-main {
   display: flex;
   flex-direction: column;
@@ -408,6 +414,8 @@ button:focus-visible {
 .faq-list p {
   margin: 0.55rem 0 0;
 }
+
+/* Three-column generator workspace and configuration controls. */
 .generator-main {
   display: flex;
   flex-direction: column;
@@ -474,6 +482,7 @@ button:focus-visible {
   gap: 0.55rem;
 }
 
+/* Generated cards, scoring details, and persistence actions. */
 .results-panel {
   display: flex;
   flex-direction: column;
@@ -626,6 +635,7 @@ button:focus-visible {
   color: var(--muted);
 }
 
+/* Search-result preview, device toggles, and width feedback. */
 .preview-panel {
   display: flex;
   flex-direction: column;
@@ -784,6 +794,7 @@ button:focus-visible {
   background: rgba(8, 14, 22, 0.7);
 }
 
+/* Authentication, error, and saved-history pages. */
 .auth-main,
 .error-main {
   display: grid;
@@ -860,6 +871,7 @@ button:focus-visible {
   align-items: center;
 }
 
+/* Footer and transient notification layer. */
 .site-footer {
   display: flex;
   justify-content: space-between;
@@ -915,6 +927,7 @@ button:focus-visible {
   border-color: rgba(255, 0, 60, 0.45);
 }
 
+/* Responsive workspace collapse points follow content width, not device labels. */
 @media (max-width: 1200px) {
   .workspace-grid {
     grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
@@ -973,6 +986,7 @@ button:focus-visible {
   }
 }
 
+/* Respect motion preferences without removing state-change feedback entirely. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

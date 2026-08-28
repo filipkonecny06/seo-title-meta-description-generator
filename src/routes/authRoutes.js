@@ -2,6 +2,7 @@ const express = require("express");
 
 const createAuthRouter = (controller, authRateLimiter) => {
   const router = express.Router();
+  // Credential endpoints share a stricter limiter than the general API.
   router.post("/register", authRateLimiter, controller.register);
   router.post("/login", authRateLimiter, controller.login);
   router.post("/logout", controller.logout);

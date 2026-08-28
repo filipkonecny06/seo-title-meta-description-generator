@@ -2,6 +2,7 @@
 <%- include('partials/header') %>
 
 <main class="history-main" id="main-content">
+  <%# Controller queries are ownership-scoped; escaped interpolation protects stored text. %>
   <section class="glass history-section">
     <h1>Generation History</h1>
     <p class="muted">Most recent 30 saved generations.</p>
@@ -31,6 +32,7 @@
     </div>
   </section>
 
+  <%# Legacy pair labels preserve meaning for records created before per-item favorites. %>
   <section class="glass history-section">
     <h2>Favorite Snippets</h2>
 

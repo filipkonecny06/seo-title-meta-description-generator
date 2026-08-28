@@ -1,8 +1,10 @@
 ﻿const bcrypt = require("bcrypt");
 const { DataTypes, Model } = require("sequelize");
 
+/** Defines accounts while keeping password hashes out of ordinary queries. */
 module.exports = (sequelize) => {
   class User extends Model {
+    /** Compares a submitted password to this explicitly loaded password hash. */
     async validatePassword(password) {
       return bcrypt.compare(password, this.passwordHash);
     }
@@ -40,6 +42,7 @@ module.exports = (sequelize) => {
       sequelize,
       modelName: "User",
       tableName: "users",
+      // Credentials require the explicit `withPassword` scope at authentication boundaries.
       defaultScope: {
         attributes: { exclude: ["passwordHash"] },
       },

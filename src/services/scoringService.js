@@ -1,3 +1,4 @@
+/** Computes a transparent heuristic score for comparing generated snippets. */
 const INTENT_SIGNAL_MAP = {
   informational: ["how", "guide", "tips", "learn", "tutorial"],
   commercial: ["review", "compare", "versus", "vs", "options", "features"],
@@ -56,7 +57,16 @@ const resolveBadge = (score) => {
   return "Review";
 };
 
+/**
+ * Scores observable SEO signals with a fixed, inspectable rubric. The score is
+ * comparative guidance, not a click-through-rate prediction.
+ */
 class OptimizationScorer {
+  /**
+   * @param {string} text Candidate title or meta description.
+   * @param {object} options Content type, keyword, intent, and weighted terms.
+   * @returns {object} Bounded score, label, contribution breakdown, and matches.
+   */
   score(text, options = {}) {
     const normalizedText = String(text || "").trim();
     const primaryKeyword = String(options.primaryKeyword || "").trim();
@@ -94,6 +104,7 @@ class OptimizationScorer {
       intentSignal: intent && hasIntentSignal(normalizedText, intent) ? 10 : 0,
     };
 
+    // Keeping every contribution visible makes the heuristic explainable in the UI.
     const score = clampScore(
       Object.values(breakdown).reduce((total, value) => total + value, 0),
     );
@@ -109,6 +120,7 @@ class OptimizationScorer {
   }
 }
 
+/** Convenience entry point for callers that do not need to retain a scorer instance. */
 const calculateOptimizationScore = (text, options) =>
   new OptimizationScorer().score(text, options);
 

@@ -1,5 +1,7 @@
+/** Selects diverse, deterministic snippets that best fit a length profile. */
 const { normalizeWhitespace } = require("./snippetText");
 
+/** Returns a candidate's character distance from the accepted length band. */
 const candidateDistance = (text, profile) => {
   if (text.length < profile.min) return profile.min - text.length;
   if (text.length > profile.max) return text.length - profile.max;
@@ -19,6 +21,7 @@ const rankCandidates = (candidates, profile) => {
       Math.abs(second.text.length - midpoint);
     if (midpointDifference) return midpointDifference;
 
+    // Lexical tie-breaking avoids relying on engine or insertion-order accidents.
     return first.text.localeCompare(second.text, "en-US");
   });
 };
@@ -51,6 +54,16 @@ const rankTemplateCandidates = (candidates, profile) => {
   return roundRobinCandidates(rankedAlternates);
 };
 
+/**
+ * Deduplicates rendered text, prefers the requested band, and interleaves
+ * templates so one prolific formula cannot dominate the returned set.
+ *
+ * @param {Array<object>} candidates Rendered candidate records.
+ * @param {number} count Required number of results.
+ * @param {{min: number, max: number}} profile Character-length target.
+ * @returns {Array<object>} Exactly `count` ranked candidates.
+ * @throws {Error} When the pool cannot supply enough distinct snippets.
+ */
 const selectCandidates = (candidates, count, profile) => {
   const unique = new Map();
   for (const candidate of candidates) {

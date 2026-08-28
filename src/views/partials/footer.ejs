@@ -11,6 +11,7 @@
 </footer>
 
 </div>
+<%# Shared utilities load before optional page modules; defer preserves document order. %>
 <script src="/js/main.js" defer></script>
 <script src="/js/csv.js" defer></script>
 <% if (typeof pageScripts !== 'undefined' && pageScripts) { %>

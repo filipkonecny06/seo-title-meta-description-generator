@@ -1,5 +1,6 @@
 "use strict";
 
+/** Renames the score to avoid implying that the heuristic predicts CTR. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.renameColumn(

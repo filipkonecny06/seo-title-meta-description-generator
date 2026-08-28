@@ -1,3 +1,7 @@
+/**
+ * Process entry point: validates infrastructure, starts HTTP service, and
+ * coordinates bounded graceful shutdown.
+ */
 require("dotenv").config({ quiet: true });
 
 const { createApp } = require("./app");
@@ -6,6 +10,12 @@ const { loadEnvironment } = require("./config/env");
 const { createSessionStore } = require("./config/sessionStore");
 const { createModels } = require("./models");
 
+/**
+ * Starts the application only after both persistence layers are reachable.
+ *
+ * @returns {Promise<object>} Live application resources, primarily for tests
+ * and embedding.
+ */
 const startServer = async () => {
   const config = loadEnvironment();
   const sequelize = createSequelize(config.database);
@@ -25,6 +35,7 @@ const startServer = async () => {
   });
 
   let shuttingDown = false;
+  // Signals may arrive more than once; only one shutdown sequence may own cleanup.
   const shutdown = async (signal) => {
     if (shuttingDown) return;
     shuttingDown = true;
@@ -32,6 +43,7 @@ const startServer = async () => {
     const closeServer = new Promise((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     });
+    // A forced deadline prevents an unhealthy dependency from hanging deployment.
     setTimeout(() => process.exit(1), 10000).unref();
     let exitCode = 0;
     try {

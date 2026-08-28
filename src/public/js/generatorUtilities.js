@@ -1,3 +1,4 @@
+/** Pure formatting helpers shared by browser modules and their Node tests. */
 (function attachGeneratorUtilities(root, factory) {
   const exported = factory();
   if (typeof module === "object" && module.exports) {
@@ -9,6 +10,7 @@
     ...exported,
   };
 })(typeof globalThis === "object" ? globalThis : this, () => {
+  // Escape user-controlled strings before interpolating them into generated markup.
   const escapeHtml = (value) =>
     String(value || "")
       .replace(/&/g, "&amp;")

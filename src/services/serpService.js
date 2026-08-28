@@ -1,3 +1,4 @@
+/** Builds safe SERP preview markup and consistent pixel-width estimates. */
 const CHAR_WIDTHS = {
   title: { default: 8.8, thin: 4.6, wide: 11.8, space: 4 },
   meta: { default: 7.2, thin: 4, wide: 10, space: 3.8 },
@@ -32,6 +33,10 @@ const escapeHtml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+/**
+ * Escapes all source text before adding the only trusted markup (`strong`).
+ * Longer keywords are matched first to avoid partial highlighting collisions.
+ */
 const highlightKeywords = (text, keywords) => {
   const source = String(text || "");
   const keywordList = Array.isArray(keywords)
@@ -62,7 +67,11 @@ const highlightKeywords = (text, keywords) => {
   return fragments.join("");
 };
 
+/** Estimates search-result rendering without requiring a browser canvas. */
 class SerpPreviewBuilder {
+  /**
+   * Returns a deterministic approximation, not a guarantee of search-engine rendering.
+   */
   estimatePixelWidth(text, type = "title") {
     const bucket = CHAR_WIDTHS[type] || CHAR_WIDTHS.title;
     return [...String(text || "")].reduce((total, character) => {
@@ -77,6 +86,10 @@ class SerpPreviewBuilder {
     return PIXEL_LIMITS[device] || PIXEL_LIMITS.desktop;
   }
 
+  /**
+   * @param {object} input Preview copy, keywords, URL, and device mode.
+   * @returns {object} Escaped highlight markup plus width and truncation metadata.
+   */
   build({ title, meta, url, primaryKeyword, secondaryKeywords, device }) {
     const safeTitle = String(title || "").trim();
     const safeMeta = String(meta || "").trim();

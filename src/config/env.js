@@ -1,3 +1,4 @@
+/** Validates environment variables and maps them to application configuration. */
 const { z } = require("zod");
 const { parseEnvironmentBoolean } = require("./environmentBoolean");
 
@@ -42,6 +43,10 @@ const environmentSchema = z
   })
   .passthrough();
 
+/**
+ * Preserves Express's supported proxy formats while normalizing common boolean
+ * and numeric environment values.
+ */
 const parseTrustProxy = (value) => {
   const normalized = String(value).trim().toLowerCase();
   if (normalized === "false" || normalized === "0" || !normalized) return false;
@@ -50,6 +55,14 @@ const parseTrustProxy = (value) => {
   return value;
 };
 
+/**
+ * Parses an environment-like object and returns the only configuration shape
+ * consumed by the application.
+ *
+ * @param {NodeJS.ProcessEnv|object} source Environment variables to validate.
+ * @returns {object} Validated runtime configuration.
+ * @throws {import("zod").ZodError} When required configuration is invalid.
+ */
 const loadEnvironment = (source = process.env) => {
   const parsed = environmentSchema.parse(source);
   return {

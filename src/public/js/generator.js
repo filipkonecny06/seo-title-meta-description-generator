@@ -1,3 +1,4 @@
+/** Composes browser-side generator dependencies and starts them on the workspace page. */
 (function attachGeneratorBootstrap(root, factory) {
   const exported = factory();
   if (typeof module === "object" && module.exports) {
@@ -15,6 +16,10 @@
     AbortControllerImplementation: root.AbortController,
   });
 })(typeof globalThis === "object" ? globalThis : this, () => {
+  /**
+   * Creates and connects the generator controller when the page marker exists.
+   * Platform dependencies are injectable so bootstrap behavior is testable in Node.
+   */
   const bootstrapGenerator = ({
     window,
     document,
@@ -35,6 +40,7 @@
       document
         .querySelector('meta[name="csrf-token"]')
         ?.getAttribute("content") || "";
+    // The server-issued token is captured once and sent with every state-changing request.
     const api = new GeneratorApiClient({
       csrfToken,
       fetchImplementation: window.fetch.bind(window),

@@ -1,3 +1,4 @@
+/** Expected application failure carrying a safe HTTP status and stable code. */
 class AppError extends Error {
   constructor(status, message, code = "APPLICATION_ERROR") {
     super(message);

@@ -6,6 +6,7 @@
     <h1>Create Account</h1>
     <p>Save generated drafts and build a reusable snippet library.</p>
 
+    <%# Client constraints aid users; the server validates length and UTF-8 byte limits. %>
     <form action="/register" method="POST" class="auth-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 

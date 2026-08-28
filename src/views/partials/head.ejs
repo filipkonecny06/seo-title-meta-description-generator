@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  <%# The CSRF token is read by the same-origin API client; CSP is emitted by Helmet. %>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="<%= csrfToken %>" />
@@ -9,6 +10,7 @@
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
+  <%# Keep keyboard navigation ahead of decorative and repeated page chrome. %>
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <div class="backdrop-gradient" aria-hidden="true"></div>
   <div class="backdrop-noise" aria-hidden="true"></div>

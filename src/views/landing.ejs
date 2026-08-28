@@ -91,6 +91,7 @@
     </div>
   </section>
 
+  <%# FAQ copy is shared with the structured-data block below. %>
   <section class="faq-section glass">
     <h2>FAQ</h2>
     <div class="faq-list">
@@ -104,6 +105,7 @@
   </section>
 </main>
 
+<%# FAQ data is server-owned, serialized once, and permitted by this response's CSP nonce. %>
 <script type="application/ld+json" nonce="<%= cspNonce %>">
 <%- JSON.stringify({
   '@context': 'https://schema.org',

@@ -3,6 +3,7 @@ const { requireApiAuth } = require("../middleware/auth");
 
 const createApiRouter = (controller) => {
   const router = express.Router();
+  // Generation and previews are public; persistence always requires a session.
   router.post("/generate", controller.generate);
   router.post("/preview", controller.preview);
   router.post("/save", requireApiAuth, controller.save);

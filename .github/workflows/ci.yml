@@ -7,6 +7,7 @@ on:
     branches: [main]
 
 permissions:
+  # Verification jobs need repository contents only; no write token is issued.
   contents: read
 
 concurrency:
@@ -19,6 +20,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
+      # Test every Node release declared by the package engine contract.
       matrix:
         node-version: [22, 24]
     services:
@@ -55,11 +57,12 @@ jobs:
       - run: npm ci
       - run: npm run catalog:validate
       - run: npm run check
+      # Prove both forward migrations and the complete rollback chain.
       - run: npm run db:migrate
       - run: npm run db:migrate:undo:all
       - run: npm run db:migrate
       - run: npm run audit:production
-
+  # Build and boot the exact release images independently of the host Node setup.
   container:
     runs-on: ubuntu-latest
     timeout-minutes: 15

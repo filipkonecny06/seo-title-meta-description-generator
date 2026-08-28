@@ -6,6 +6,7 @@
     <h1>Login</h1>
     <p>Access saved generations, favorites, and export history.</p>
 
+    <%# Authentication posts use the server-issued synchronizer token. %>
     <form action="/login" method="POST" class="auth-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 

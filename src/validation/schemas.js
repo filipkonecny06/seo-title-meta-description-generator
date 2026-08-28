@@ -1,3 +1,4 @@
+/** Defines strict body contracts for credential, generation, preview, and persistence requests. */
 const { z } = require("zod");
 const {
   INTENTS,
@@ -5,6 +6,7 @@ const {
   TITLE_STYLES,
 } = require("../catalog/catalogSchema");
 
+// HTML forms and JSON clients encode checkboxes differently; normalize them once here.
 const checkboxSchema = z.preprocess(
   (value) =>
     value === true ||
@@ -53,6 +55,7 @@ const httpUrlSchema = z
   .trim()
   .max(2048)
   .url()
+  // URL syntax alone permits unsupported schemes such as file: and javascript:.
   .refine((value) => ["http:", "https:"].includes(new URL(value).protocol), {
     message: "Only HTTP and HTTPS preview URLs are supported.",
   });
@@ -97,6 +100,7 @@ const bcryptSafePassword = (minimumLength) =>
     .string()
     .min(minimumLength)
     .max(72)
+    // bcrypt's limit is bytes, which differs from character count for Unicode input.
     .refine((value) => Buffer.byteLength(value, "utf8") <= 72, {
       message: "Password must be no more than 72 UTF-8 bytes.",
     });

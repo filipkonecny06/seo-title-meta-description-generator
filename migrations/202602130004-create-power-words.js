@@ -1,5 +1,6 @@
 ﻿"use strict";
 
+/** Creates the original scoring-term table retained for rollback support. */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("power_words", {

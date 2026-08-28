@@ -5,11 +5,13 @@
   </a>
 
   <nav class="main-nav" aria-label="Primary navigation">
+    <%# Navigation and persistence controls reflect server-owned session state. %>
     <a href="/" class="nav-link" <% if (currentPath === '/') { %>aria-current="page"<% } %>>Home</a>
     <a href="/generator" class="nav-link" <% if (currentPath === '/generator') { %>aria-current="page"<% } %>>Generator</a>
     <% if (currentUser) { %>
       <a href="/history" class="nav-link" <% if (currentPath === '/history') { %>aria-current="page"<% } %>>History</a>
       <form action="/logout" method="POST" class="inline-form">
+        <%# Logout changes session state and therefore requires CSRF protection. %>
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
         <button type="submit" class="btn subtle">Logout</button>
       </form>
@@ -20,6 +22,7 @@
   </nav>
 </header>
 
+<%# Flash content is escaped and announced according to its urgency. %>
 <% if (flash) { %>
   <div class="flash flash-<%= flash.type %>" data-flash role="<%= flash.type === 'warning' ? 'alert' : 'status' %>">
     <span><%= flash.message %></span>

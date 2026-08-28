@@ -1,3 +1,4 @@
+/** Builds deterministic plain-text and CSV exports and downloads them in-browser. */
 (function attachGeneratorExport(root, factory) {
   const exported = factory();
   if (typeof module === "object" && module.exports) {
@@ -12,6 +13,7 @@
   const hasOutput = (state) =>
     state.titles.length > 0 || state.metas.length > 0;
 
+  /** @returns {string} Human-readable snapshot of all generated candidates. */
   const buildTextExport = (state) => {
     const lines = [
       "SEO Title + Meta Export",
@@ -33,6 +35,7 @@
     return lines.join("\n");
   };
 
+  /** @returns {string} CSV with common formula-leading fields neutralized. */
   const buildCsvExport = (state, csvEscape) => {
     const rows = [
       [
@@ -63,6 +66,7 @@
       .join("\n");
   };
 
+  /** Owns browser download side effects; format builders remain independently testable. */
   class SnippetExporter {
     constructor({ document, urlApi, BlobImplementation, csvEscape, clock }) {
       this.document = document;
@@ -72,6 +76,7 @@
       this.clock = clock;
     }
 
+    /** Creates a temporary object URL, triggers download, and releases it immediately. */
     download(content, type, extension) {
       const blob = new this.BlobImplementation([content], { type });
       const link = this.document.createElement("a");

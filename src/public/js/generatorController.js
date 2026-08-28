@@ -1,3 +1,4 @@
+/** Coordinates generator state, UI events, cancellable requests, and exports. */
 (function attachGeneratorController(root, factory) {
   const dependencies =
     typeof module === "object" && module.exports
@@ -18,6 +19,7 @@
 })(
   typeof globalThis === "object" ? globalThis : this,
   ({ hasOutput, slugify }) => {
+    /** Holds serializable workspace state without DOM or network side effects. */
     class GeneratorState {
       constructor() {
         this.config = null;
@@ -46,6 +48,7 @@
         this.compareTitleIds = [];
       }
 
+      /** Replaces prior results and resets selections tied to the old generation. */
       applyGeneration(data) {
         this.config = data.config;
         this.titles = data.titles || [];
@@ -71,6 +74,7 @@
         );
       }
 
+      /** Keeps comparison state to the two most recently selected titles. */
       toggleComparison(id) {
         if (this.compareTitleIds.includes(id)) {
           this.compareTitleIds = this.compareTitleIds.filter(
@@ -82,6 +86,7 @@
       }
     }
 
+    /** Application controller joining API, view, persistence, clipboard, and export boundaries. */
     class GeneratorController {
       constructor({
         api,
@@ -102,6 +107,7 @@
         this.state = new GeneratorState();
         this.generationController = null;
         this.previewController = null;
+        // Monotonic sequences prevent stale responses from overwriting newer state.
         this.generationSequence = 0;
         this.previewSequence = 0;
         this.generationPending = false;
@@ -109,6 +115,7 @@
         this.favoritePromises = new Map();
       }
 
+      /** Binds UI events once and renders the initial empty state. */
       connect() {
         this.view.bind({
           generate: () => this.generate({ notify: true }),
@@ -123,6 +130,10 @@
         this.view.render(this.state);
       }
 
+      /**
+       * Cancels superseded work, generates a fresh result set, then previews its
+       * initial selection. Sequence checks cover responses that race cancellation.
+       */
       async generate({ notify = false } = {}) {
         const replacedPendingRequest = this.generationPending;
         this.invalidateGenerationRequest();
@@ -172,6 +183,7 @@
         }
       }
 
+      /** Cancels generation and invalidates any response already in flight. */
       invalidateGenerationRequest() {
         this.generationController?.abort();
         this.generationController = null;
@@ -179,6 +191,7 @@
         this.generationSequence += 1;
       }
 
+      /** Cancels preview work and invalidates any response already in flight. */
       invalidatePreviewRequest() {
         this.previewController?.abort();
         this.previewController = null;
@@ -192,6 +205,7 @@
         this.view.setLoading(false);
       }
 
+      /** Requests a preview only for the currently selected generation and device. */
       async refreshPreview() {
         this.invalidatePreviewRequest();
         const title = this.state.selectedTitle();
@@ -233,6 +247,10 @@
         }
       }
 
+      /**
+       * Coalesces concurrent saves and reuses the returned ID after a successful
+       * save for the current generation.
+       */
       async saveGeneration({ notify = true } = {}) {
         if (!this.isAuthenticated) {
           this.toast("Login required to save generation.", "warning");
@@ -287,12 +305,15 @@
         }
       }
 
+      /** Saves a favorite after ensuring its parent generation has an ID. */
       saveFavorite(item, type) {
         if (!this.isAuthenticated) {
           this.toast("Login required to save favorites.", "warning");
           return Promise.resolve();
         }
         const favoriteKey = `${this.generationSequence}:${type}:${item.id}`;
+        // Repeated clicks share one pending operation; settled entries are removed
+        // so a later attempt can retry.
         const existing = this.favoritePromises.get(favoriteKey);
         if (existing) return existing;
 
@@ -326,6 +347,7 @@
         );
       }
 
+      /** Copies plain text and converts browser permission failures into user feedback. */
       async copyToClipboard(value) {
         try {
           await this.clipboard.writeText(value);
@@ -351,6 +373,7 @@
         return false;
       }
 
+      /** Dispatches delegated result-card actions against current state only. */
       handleResultAction(event, type) {
         const action = this.view.getAction(event);
         if (!action) return;
