@@ -2,28 +2,10 @@ const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 const {
   GeneratorController,
-  GeneratorState,
 } = require("../../src/public/js/generatorController");
 const { generatedData, title } = require("../../test-support/browserFixtures");
 
 describe("GeneratorController", () => {
-  it("keeps selection and comparison transitions in a dedicated state object", () => {
-    const state = new GeneratorState();
-    state.applyGeneration(generatedData);
-    assert.equal(state.selectedTitleId, "title-1");
-    assert.equal(state.selectedMetaId, "meta-1");
-    assert.equal(state.selectedTitle(), title);
-    state.toggleComparison("title-1");
-    state.toggleComparison("title-2");
-    state.toggleComparison("title-3");
-    assert.deepEqual(state.compareTitleIds, ["title-2", "title-3"]);
-    state.toggleComparison("title-2");
-    assert.deepEqual(state.compareTitleIds, ["title-3"]);
-    state.clearResults();
-    assert.equal(state.selectedTitle(), null);
-    assert.equal(state.selectedMeta(), null);
-  });
-
   it("connects every browser event to its controller boundary", async () => {
     const view = {
       bind(handlers) {

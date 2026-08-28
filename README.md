@@ -50,6 +50,9 @@ The main responsibilities are separated by concern:
 - `generatorRules` owns intent/tone vocabulary and documented length policies;
   `candidateSelection` owns formula and alternative balancing; `snippetText`
   owns token formatting.
+- `generationResult` decorates selected candidates and builds the documented
+  response DTO; `contracts/generation` owns score labels, badge levels, and
+  JSDoc shapes shared across server and browser boundaries.
 - `OptimizationScorer` calculates the inspectable drafting score.
 - `SerpPreviewBuilder` estimates display width and escapes preview markup.
 - Controller classes validate request boundaries and coordinate persistence.
@@ -58,6 +61,13 @@ The browser uses the same boundary: `GeneratorApiClient` owns HTTP requests,
 `GeneratorView` owns DOM rendering, `SnippetExporter` owns file creation, and
 `GeneratorController` coordinates state and events. The entry script only wires
 those components together.
+
+Browser modules intentionally use a small universal wrapper so the same files
+can run as direct static scripts and as CommonJS modules in Node tests without a
+bundling step. `generator.ejs` is the authoritative load order, and the
+integration suite verifies it. Pure state, request-lifecycle, and rendering
+helpers remain separate from DOM and network adapters despite sharing that
+wrapper.
 
 ## Requirements
 
@@ -164,6 +174,12 @@ browser source files; only the executable server bootstrap and the CLI
 configuration adapter are excluded. The generator tests exercise every title
 style, description style, length profile, intent, and tone, including bulk
 uniqueness and clock-independence when the year option is off.
+
+The `package.json` overrides pin transitive `sequelize` and `sequelize-cli`
+dependencies (`dottie`, `lodash`, and `uuid`) to reviewed patched releases.
+Before changing or removing an override, inspect its current parent with
+`npm ls dottie lodash uuid`, run the complete quality checks, and repeat the
+production dependency audit.
 
 ## Operational and security notes
 

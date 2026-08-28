@@ -159,6 +159,9 @@ describe("application security boundaries", () => {
     assert.ok(!csp.includes("'unsafe-inline'"));
     const browserModules = [
       "/js/generatorUtilities.js",
+      "/js/generatorState.js",
+      "/js/requestLifecycle.js",
+      "/js/generatorRendering.js",
       "/js/generatorApi.js",
       "/js/generatorExport.js",
       "/js/generatorView.js",

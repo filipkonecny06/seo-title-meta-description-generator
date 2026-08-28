@@ -40,6 +40,16 @@ const COVERAGE_FLOORS = Object.freeze({
     functions: 90,
     branches: 75,
   }),
+  "src/public/js/generatorRendering.js": Object.freeze({
+    lines: 95,
+    functions: 95,
+    branches: 75,
+  }),
+  "src/public/js/generatorState.js": Object.freeze({
+    lines: 95,
+    functions: 95,
+    branches: 85,
+  }),
   "src/public/js/generatorView.js": Object.freeze({
     lines: 95,
     functions: 95,
@@ -49,6 +59,11 @@ const COVERAGE_FLOORS = Object.freeze({
     lines: 95,
     functions: 95,
     branches: 80,
+  }),
+  "src/public/js/requestLifecycle.js": Object.freeze({
+    lines: 95,
+    functions: 95,
+    branches: 85,
   }),
   "src/services/serpService.js": Object.freeze({
     lines: 95,

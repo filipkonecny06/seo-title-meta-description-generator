@@ -1,4 +1,7 @@
 /** Computes a transparent heuristic score for comparing generated snippets. */
+const { resolveScoreBadge } = require("../contracts/generation");
+const { escapeRegExp } = require("./textSafety");
+
 const INTENT_SIGNAL_MAP = {
   informational: ["how", "guide", "tips", "learn", "tutorial"],
   commercial: ["review", "compare", "versus", "vs", "options", "features"],
@@ -19,9 +22,6 @@ const OPTIMAL_LENGTHS = {
   title: { min: 50, max: 60 },
   meta: { min: 140, max: 160 },
 };
-
-const escapeRegExp = (value) =>
-  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const phrasePattern = (phrase, { startsWith = false } = {}) => {
   const escaped = escapeRegExp(phrase.trim()).replace(/\s+/g, "\\s+");
@@ -51,10 +51,7 @@ const hasIntentSignal = (text, intent) =>
 const clampScore = (value) => Math.max(0, Math.min(100, Math.round(value)));
 
 const resolveBadge = (score) => {
-  if (score >= 90) return "High alignment";
-  if (score >= 75) return "Moderate alignment";
-  if (score >= 60) return "Partial alignment";
-  return "Review";
+  return resolveScoreBadge(score).label;
 };
 
 /**
@@ -65,7 +62,7 @@ class OptimizationScorer {
   /**
    * @param {string} text Candidate title or meta description.
    * @param {object} options Content type, keyword, intent, and weighted terms.
-   * @returns {object} Bounded score, label, contribution breakdown, and matches.
+   * @returns {import("../contracts/generation").OptimizationScoreResult} Bounded score and inspectable contributions.
    */
   score(text, options = {}) {
     const normalizedText = String(text || "").trim();
@@ -108,10 +105,12 @@ class OptimizationScorer {
     const score = clampScore(
       Object.values(breakdown).reduce((total, value) => total + value, 0),
     );
+    const badge = resolveScoreBadge(score);
 
     return {
       score,
-      badge: resolveBadge(score),
+      badge: badge.label,
+      badgeLevel: badge.level,
       breakdown,
       matchedPowerWords: matchedPowerWords.map((entry) =>
         String(entry.word || entry),

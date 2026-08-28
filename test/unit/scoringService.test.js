@@ -4,6 +4,10 @@ const {
   OptimizationScorer,
   hasIntentSignal,
 } = require("../../src/services/scoringService");
+const {
+  SCORE_BREAKDOWN_LABELS,
+  resolveScoreBadge,
+} = require("../../src/contracts/generation");
 
 describe("OptimizationScorer", () => {
   const scorer = new OptimizationScorer();
@@ -25,6 +29,18 @@ describe("OptimizationScorer", () => {
     assert.equal(strong.score - light.score, 8);
     assert.equal(light.breakdown.powerWords, 2);
     assert.equal(strong.breakdown.powerWords, 10);
+    assert.equal(SCORE_BREAKDOWN_LABELS.powerWords, "Matched terms");
+  });
+
+  it("returns stable machine-readable badge levels separately from labels", () => {
+    assert.deepEqual(resolveScoreBadge(90), {
+      minimum: 90,
+      level: "high",
+      label: "High alignment",
+    });
+    assert.equal(resolveScoreBadge(75).level, "medium");
+    assert.equal(resolveScoreBadge(60).level, "partial");
+    assert.equal(resolveScoreBadge(0).level, "review");
   });
 
   it("uses content-specific optimal lengths", () => {

@@ -98,6 +98,7 @@ const awkwardIntentPhrase =
 const assertCleanOutput = (result) => {
   assert.equal(result.titles.length, result.config.bulkMode ? 20 : 10);
   assert.equal(result.metas.length, 5);
+  assert.equal(result.scoreBreakdownLabels.intentSignal, "Intent signal");
   for (const items of [result.titles, result.metas]) {
     assert.equal(
       new Set(items.map((item) => item.text.toLocaleLowerCase("en-US"))).size,
@@ -112,6 +113,9 @@ const assertCleanOutput = (result) => {
       assert.doesNotMatch(item.text, trailingFragment);
       assert.doesNotMatch(item.text, awkwardIntentPhrase);
       assert.equal(item.charCount, item.text.length);
+      assert.ok(
+        ["high", "medium", "partial", "review"].includes(item.badgeLevel),
+      );
     }
   }
   assert.ok(result.metas.every((item) => /[.!?]$/.test(item.text)));

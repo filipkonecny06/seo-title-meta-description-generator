@@ -5,6 +5,8 @@
       ? {
           ...require("./generatorUtilities"),
           ...require("./generatorExport"),
+          ...require("./generatorState"),
+          ...require("./requestLifecycle"),
         }
       : root.OrbitGeneratorModules;
   const exported = factory(dependencies);
@@ -18,74 +20,7 @@
   };
 })(
   typeof globalThis === "object" ? globalThis : this,
-  ({ hasOutput, slugify }) => {
-    /** Holds serializable workspace state without DOM or network side effects. */
-    class GeneratorState {
-      constructor() {
-        this.config = null;
-        this.titles = [];
-        this.metas = [];
-        this.summary = null;
-        this.schemaHeadlineSuggestions = [];
-        this.lengthFallback = null;
-        this.selectedTitleId = null;
-        this.selectedMetaId = null;
-        this.generationHistoryId = null;
-        this.compareTitleIds = [];
-        this.device = "desktop";
-      }
-
-      clearResults() {
-        this.config = null;
-        this.titles = [];
-        this.metas = [];
-        this.summary = null;
-        this.schemaHeadlineSuggestions = [];
-        this.lengthFallback = null;
-        this.selectedTitleId = null;
-        this.selectedMetaId = null;
-        this.generationHistoryId = null;
-        this.compareTitleIds = [];
-      }
-
-      /** Replaces prior results and resets selections tied to the old generation. */
-      applyGeneration(data) {
-        this.config = data.config;
-        this.titles = data.titles || [];
-        this.metas = data.metas || [];
-        this.summary = data.summary || null;
-        this.schemaHeadlineSuggestions = data.schemaHeadlineSuggestions || [];
-        this.lengthFallback = data.lengthFallback || null;
-        this.selectedTitleId = this.titles[0]?.id || null;
-        this.selectedMetaId = this.metas[0]?.id || null;
-        this.generationHistoryId = null;
-        this.compareTitleIds = [];
-      }
-
-      selectedTitle() {
-        return (
-          this.titles.find((item) => item.id === this.selectedTitleId) || null
-        );
-      }
-
-      selectedMeta() {
-        return (
-          this.metas.find((item) => item.id === this.selectedMetaId) || null
-        );
-      }
-
-      /** Keeps comparison state to the two most recently selected titles. */
-      toggleComparison(id) {
-        if (this.compareTitleIds.includes(id)) {
-          this.compareTitleIds = this.compareTitleIds.filter(
-            (entry) => entry !== id,
-          );
-          return;
-        }
-        this.compareTitleIds = [...this.compareTitleIds, id].slice(-2);
-      }
-    }
-
+  ({ GeneratorState, hasOutput, RequestLifecycle, slugify }) => {
     /** Application controller joining API, view, persistence, clipboard, and export boundaries. */
     class GeneratorController {
       constructor({
@@ -103,16 +38,19 @@
         this.clipboard = clipboard;
         this.toast = toast;
         this.isAuthenticated = isAuthenticated;
-        this.createAbortController = createAbortController;
         this.state = new GeneratorState();
-        this.generationController = null;
-        this.previewController = null;
-        // Monotonic sequences prevent stale responses from overwriting newer state.
-        this.generationSequence = 0;
-        this.previewSequence = 0;
-        this.generationPending = false;
+        this.generationRequests = new RequestLifecycle(createAbortController);
+        this.previewRequests = new RequestLifecycle(createAbortController);
         this.savePromises = new Map();
         this.favoritePromises = new Map();
+      }
+
+      get generationSequence() {
+        return this.generationRequests.sequence;
+      }
+
+      get generationPending() {
+        return this.generationRequests.pending;
       }
 
       /** Binds UI events once and renders the initial empty state. */
@@ -150,34 +88,27 @@
           return;
         }
 
-        this.generationController = this.createAbortController();
-        const requestSequence = this.generationSequence;
-        this.generationPending = true;
+        const request = this.generationRequests.begin();
         this.view.setLoading(true);
 
         try {
-          const response = await this.api.generate(
-            payload,
-            this.generationController.signal,
-          );
-          if (requestSequence !== this.generationSequence) return;
+          const response = await this.api.generate(payload, request.signal);
+          if (!this.generationRequests.isCurrent(request.sequence)) return;
           this.state.applyGeneration(response.data);
           this.view.render(this.state);
           await this.refreshPreview();
-          if (requestSequence !== this.generationSequence) return;
+          if (!this.generationRequests.isCurrent(request.sequence)) return;
           if (notify) this.toast("Variations generated.", "success");
           this.view.setStatus(
             `${this.state.titles.length} titles and ${this.state.metas.length} meta descriptions generated.`,
           );
         } catch (error) {
-          if (requestSequence !== this.generationSequence) return;
+          if (!this.generationRequests.isCurrent(request.sequence)) return;
           if (error.name === "AbortError") return;
           this.toast(error.message, "error");
           this.view.setStatus(`Generation failed: ${error.message}`);
         } finally {
-          if (requestSequence === this.generationSequence) {
-            this.generationPending = false;
-            this.generationController = null;
+          if (this.generationRequests.settle(request.sequence)) {
             this.view.setLoading(false);
           }
         }
@@ -185,17 +116,12 @@
 
       /** Cancels generation and invalidates any response already in flight. */
       invalidateGenerationRequest() {
-        this.generationController?.abort();
-        this.generationController = null;
-        this.generationPending = false;
-        this.generationSequence += 1;
+        this.generationRequests.invalidate();
       }
 
       /** Cancels preview work and invalidates any response already in flight. */
       invalidatePreviewRequest() {
-        this.previewController?.abort();
-        this.previewController = null;
-        this.previewSequence += 1;
+        this.previewRequests.invalidate();
       }
 
       handleConfigurationChange() {
@@ -224,26 +150,20 @@
           device: this.state.device,
         };
 
-        this.previewController = this.createAbortController();
-        const requestSequence = this.previewSequence;
+        const request = this.previewRequests.begin();
         try {
-          const response = await this.api.preview(
-            payload,
-            this.previewController.signal,
-          );
-          if (requestSequence !== this.previewSequence) return;
+          const response = await this.api.preview(payload, request.signal);
+          if (!this.previewRequests.isCurrent(request.sequence)) return;
           this.view.updatePreview(response.data, this.state);
         } catch (error) {
           if (
             error.name !== "AbortError" &&
-            requestSequence === this.previewSequence
+            this.previewRequests.isCurrent(request.sequence)
           ) {
             this.toast(error.message, "error");
           }
         } finally {
-          if (requestSequence === this.previewSequence) {
-            this.previewController = null;
-          }
+          this.previewRequests.settle(request.sequence);
         }
       }
 
@@ -409,6 +329,6 @@
       }
     }
 
-    return { GeneratorController, GeneratorState };
+    return { GeneratorController };
   },
 );

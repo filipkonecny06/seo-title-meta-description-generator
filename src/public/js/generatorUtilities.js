@@ -27,12 +27,12 @@
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
 
-  const badgeClass = (badge) => {
-    const normalized = String(badge || "").toLowerCase();
-    if (normalized === "high alignment") return "badge-high";
-    if (normalized === "moderate alignment") return "badge-medium";
-    if (normalized === "partial alignment") return "badge-low";
-    return "badge-review";
+  const BADGE_LEVELS = new Set(["high", "medium", "partial", "review"]);
+
+  /** Uses the stable API badge level instead of coupling CSS to display copy. */
+  const badgeClass = (level) => {
+    const normalized = String(level || "").toLowerCase();
+    return `badge-${BADGE_LEVELS.has(normalized) ? normalized : "review"}`;
   };
 
   return { badgeClass, escapeHtml, slugify };

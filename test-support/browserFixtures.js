@@ -5,6 +5,7 @@ const title = {
   pixelWidth: 210,
   optimizationScore: 78,
   badge: "Moderate alignment",
+  badgeLevel: "medium",
   truncated: false,
   outsideCharacterTarget: false,
   scoreBreakdown: {
@@ -21,6 +22,7 @@ const meta = {
   pixelWidth: 430,
   optimizationScore: 66,
   badge: "Partial alignment",
+  badgeLevel: "partial",
   truncated: true,
   outsideCharacterTarget: true,
   scoreBreakdown: { baseline: 20, optimalLength: 15 },
@@ -33,6 +35,12 @@ const generatedData = {
   },
   titles: [title],
   metas: [meta],
+  scoreBreakdownLabels: {
+    baseline: "Baseline",
+    powerWords: "Matched terms",
+    intentSignal: "Intent signal",
+    optimalLength: "Optimal scoring length",
+  },
   summary: {
     titleCount: 1,
     metaCount: 1,

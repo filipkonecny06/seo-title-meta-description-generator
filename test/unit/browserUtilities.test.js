@@ -13,7 +13,8 @@ describe("browser generator utilities", () => {
       "&lt;script type=&quot;x&quot;&gt;&amp;&lt;/script&gt;",
     );
     assert.equal(slugify("  SEO & CMS Review  "), "seo-cms-review");
-    assert.equal(badgeClass("High alignment"), "badge-high");
+    assert.equal(badgeClass("high"), "badge-high");
+    assert.equal(badgeClass("partial"), "badge-partial");
     assert.equal(badgeClass("unknown"), "badge-review");
   });
 });

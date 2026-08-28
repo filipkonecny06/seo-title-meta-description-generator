@@ -2,7 +2,10 @@
 (function attachGeneratorView(root, factory) {
   const dependencies =
     typeof module === "object" && module.exports
-      ? require("./generatorUtilities")
+      ? {
+          ...require("./generatorUtilities"),
+          ...require("./generatorRendering"),
+        }
       : root.OrbitGeneratorModules;
   const exported = factory(dependencies);
   if (typeof module === "object" && module.exports) {
@@ -15,120 +18,7 @@
   };
 })(
   typeof globalThis === "object" ? globalThis : this,
-  ({ badgeClass, escapeHtml }) => {
-    const SCORE_LABELS = {
-      baseline: "Baseline",
-      number: "Number",
-      year: "Current year",
-      powerWords: "Matched terms",
-      optimalLength: "Optimal scoring length",
-      keywordFirst: "Keyword first",
-      intentSignal: "Intent signal",
-    };
-
-    // Strings that may contain user input are escaped; server-generated IDs and
-    // numeric metrics are inserted directly.
-    const renderScoreDetails = (item) => {
-      const breakdown = Object.entries(item.scoreBreakdown || {})
-        .map(
-          ([key, value]) => `
-            <div>
-              <dt>${escapeHtml(SCORE_LABELS[key] || key)}</dt>
-              <dd>${Number(value) || 0} points</dd>
-            </div>`,
-        )
-        .join("");
-      const matchedTerms = (item.matchedPowerWords || [])
-        .map((term) => escapeHtml(term))
-        .join(", ");
-      return `
-        <details class="score-details">
-          <summary>Score breakdown</summary>
-          <dl>${breakdown || "<div><dt>Scored signals</dt><dd>None</dd></div>"}</dl>
-          <p><strong>Matched terms:</strong> ${matchedTerms || "None"}</p>
-        </details>`;
-    };
-
-    const renderTitleCard = (item, index, state) => {
-      const activeClass = item.id === state.selectedTitleId ? "active" : "";
-      const compareActive = state.compareTitleIds.includes(item.id)
-        ? "active"
-        : "";
-      return `
-        <article class="result-card ${activeClass}" data-id="${item.id}">
-          <div class="card-head">
-            <strong>Title ${index + 1}</strong>
-            <span class="pill ${badgeClass(item.badge)}">${escapeHtml(item.badge)} ${item.optimizationScore}</span>
-          </div>
-          <p class="result-text">${escapeHtml(item.text)}</p>
-          <div class="result-metrics">
-            <span>Chars: ${item.charCount}</span>
-            <span>Pixels: ${item.pixelWidth}</span>
-            <span>${item.truncated ? "Potential truncation" : "Within desktop width estimate"}</span>
-            <span>${item.outsideCharacterTarget ? "Outside selected character band" : "Within selected character band"}</span>
-          </div>
-          ${renderScoreDetails(item)}
-          <div class="result-actions">
-            <button type="button" data-action="select" data-type="title" data-id="${item.id}" aria-label="Preview title ${index + 1}">Preview</button>
-            <button type="button" data-action="copy" data-type="title" data-id="${item.id}" aria-label="Copy title ${index + 1}">Copy</button>
-            <button type="button" data-action="favorite" data-type="title" data-id="${item.id}" aria-label="Save title ${index + 1} as favorite">Favorite</button>
-            <button type="button" data-action="compare" data-type="title" data-id="${item.id}" class="${compareActive}" aria-pressed="${compareActive ? "true" : "false"}" aria-label="Compare title ${index + 1}">Compare</button>
-          </div>
-        </article>
-      `;
-    };
-
-    const renderMetaCard = (item, index, state) => {
-      const activeClass = item.id === state.selectedMetaId ? "active" : "";
-      return `
-        <article class="result-card ${activeClass}" data-id="${item.id}">
-          <div class="card-head">
-            <strong>Meta ${index + 1}</strong>
-            <span class="pill ${badgeClass(item.badge)}">${escapeHtml(item.badge)} ${item.optimizationScore}</span>
-          </div>
-          <p class="result-text">${escapeHtml(item.text)}</p>
-          <div class="result-metrics">
-            <span>Chars: ${item.charCount}</span>
-            <span>Pixels: ${item.pixelWidth}</span>
-            <span>${item.truncated ? "Potential truncation" : "Within desktop width estimate"}</span>
-            <span>${item.outsideCharacterTarget ? "Outside selected character band" : "Within selected character band"}</span>
-          </div>
-          ${renderScoreDetails(item)}
-          <div class="result-actions">
-            <button type="button" data-action="select" data-type="meta" data-id="${item.id}" aria-label="Preview meta description ${index + 1}">Preview</button>
-            <button type="button" data-action="copy" data-type="meta" data-id="${item.id}" aria-label="Copy meta description ${index + 1}">Copy</button>
-            <button type="button" data-action="favorite" data-type="meta" data-id="${item.id}" aria-label="Save meta description ${index + 1} as favorite">Favorite</button>
-          </div>
-        </article>
-      `;
-    };
-
-    const renderComparison = (state) => {
-      const selected = state.compareTitleIds
-        .map((id) => state.titles.find((item) => item.id === id))
-        .filter(Boolean);
-      if (selected.length < 2) return "";
-      const [first, second] = selected;
-      const higherScoringTitle =
-        first.optimizationScore >= second.optimizationScore ? first : second;
-      return `
-        <h3>Compare 2 Titles</h3>
-        <div class="compare-grid">
-          <article class="compare-item">
-            <strong>A</strong>
-            <p>${escapeHtml(first.text)}</p>
-            <p>Score: ${first.optimizationScore} (${escapeHtml(first.badge)}) | Chars: ${first.charCount} | Estimated pixels: ${first.pixelWidth}</p>
-          </article>
-          <article class="compare-item">
-            <strong>B</strong>
-            <p>${escapeHtml(second.text)}</p>
-            <p>Score: ${second.optimizationScore} (${escapeHtml(second.badge)}) | Chars: ${second.charCount} | Estimated pixels: ${second.pixelWidth}</p>
-          </article>
-        </div>
-        <p class="muted small-text">Higher heuristic score: <strong>${escapeHtml(higherScoringTitle.text)}</strong></p>
-      `;
-    };
-
+  ({ escapeHtml, renderComparison, renderMetaCard, renderTitleCard }) => {
     /** Owns generator-page DOM queries, event binding, and accessible state updates. */
     class GeneratorView {
       constructor(document) {
@@ -282,7 +172,12 @@
         this.elements["compare-panel"].innerHTML = html;
       }
 
-      /** Applies server-produced preview markup containing only escaped text and `strong`. */
+      /**
+       * Applies server-produced preview markup containing only escaped text and `strong`.
+       *
+       * @param {import("../../contracts/generation").SerpPreviewResult} preview
+       * @param {import("./generatorState").GeneratorState} state
+       */
       updatePreview(preview, state) {
         this.elements["preview-url"].textContent =
           preview.url || "https://www.yourdomain.com";
@@ -369,12 +264,6 @@
       }
     }
 
-    return {
-      GeneratorView,
-      renderComparison,
-      renderMetaCard,
-      renderScoreDetails,
-      renderTitleCard,
-    };
+    return { GeneratorView };
   },
 );

@@ -287,7 +287,7 @@ button:focus-visible {
   color: #8ab8ff;
 }
 
-.badge-low {
+.badge-partial {
   border-color: rgba(245, 166, 35, 0.5);
   color: #ffd18b;
 }

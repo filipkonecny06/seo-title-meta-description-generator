@@ -1,4 +1,6 @@
 /** Builds safe SERP preview markup and consistent pixel-width estimates. */
+const { escapeHtml, escapeRegExp } = require("./textSafety");
+
 const CHAR_WIDTHS = {
   title: { default: 8.8, thin: 4.6, wide: 11.8, space: 4 },
   meta: { default: 7.2, thin: 4, wide: 10, space: 3.8 },
@@ -22,16 +24,6 @@ const PIXEL_LIMITS = {
   desktop: { title: 580, meta: 920 },
   mobile: { title: 430, meta: 680 },
 };
-
-const escapeRegExp = (value) =>
-  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const escapeHtml = (value) =>
-  String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 /**
  * Escapes all source text before adding the only trusted markup (`strong`).
@@ -88,7 +80,7 @@ class SerpPreviewBuilder {
 
   /**
    * @param {object} input Preview copy, keywords, URL, and device mode.
-   * @returns {object} Escaped highlight markup plus width and truncation metadata.
+   * @returns {import("../contracts/generation").SerpPreviewResult} Escaped markup plus width metadata.
    */
   build({ title, meta, url, primaryKeyword, secondaryKeywords, device }) {
     const safeTitle = String(title || "").trim();

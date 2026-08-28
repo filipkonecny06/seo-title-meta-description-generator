@@ -1,4 +1,6 @@
 /** Coordinates deterministic template expansion, selection, scoring, and preview metadata. */
+/** @typedef {import("../contracts/generation").GenerationConfig} GenerationConfig */
+/** @typedef {import("../contracts/generation").GenerationResult} GenerationResult */
 const { candidateDistance, selectCandidates } = require("./candidateSelection");
 const {
   DEFAULT_COMPETITORS,
@@ -15,6 +17,10 @@ const {
 } = require("./generatorRules");
 const { OptimizationScorer } = require("./scoringService");
 const { SerpPreviewBuilder } = require("./serpService");
+const {
+  buildGenerationResult,
+  buildSnippetResults,
+} = require("./generationResult");
 const { applyTemplate, safeString, titleCase } = require("./snippetText");
 
 const normalizeLengthPreference = (value) => {
@@ -33,7 +39,11 @@ const splitKeywords = (value) => {
   return entries.map(safeString).filter(Boolean);
 };
 
-/** Converts supported form and JSON representations into one domain input shape. */
+/**
+ * Converts supported form and JSON representations into one domain input shape.
+ *
+ * @returns {GenerationConfig}
+ */
 const normalizeInput = (input = {}) => ({
   primaryKeyword: safeString(input.primaryKeyword),
   secondaryKeywords: splitKeywords(input.secondaryKeywords),
@@ -133,6 +143,48 @@ const buildTextVariants = (text, type) => {
   return variants;
 };
 
+/**
+ * Selects the requested title/meta counts and enforces the documented fallback
+ * policy before candidates are decorated for the API response.
+ */
+const selectAndValidateCandidates = ({
+  titleCandidates,
+  metaCandidates,
+  titleCount,
+  titleProfile,
+  metaProfile,
+  normalInput,
+}) => {
+  const titles = selectCandidates(titleCandidates, titleCount, titleProfile);
+  const metas = selectCandidates(metaCandidates, 5, metaProfile);
+  const titleFallback = titles.some(
+    (candidate) => candidateDistance(candidate.text, titleProfile) > 0,
+  );
+  const metaFallback = metas.some(
+    (candidate) => candidateDistance(candidate.text, metaProfile) > 0,
+  );
+  const fallsBelowMinimum = (candidates, profile) =>
+    candidates.some((candidate) => candidate.text.length < profile.min);
+  const hasUnderlengthFallback =
+    fallsBelowMinimum(titles, titleProfile) ||
+    fallsBelowMinimum(metas, metaProfile);
+
+  if (hasUnderlengthFallback) {
+    // Padding with empty prose would satisfy length numerically but produce poor drafts.
+    throw new Error(
+      "The catalog could not satisfy the selected character band's minimum without incomplete padding.",
+    );
+  }
+  if ((titleFallback || metaFallback) && normalInput) {
+    // A normal-range miss indicates a catalog regression rather than difficult user input.
+    throw new Error(
+      "The catalog could not satisfy the selected character band for an input inside the documented normal range.",
+    );
+  }
+
+  return { titles, metas, titleFallback, metaFallback };
+};
+
 /** Generates inspectable title and meta candidates from a validated catalog. */
 class SnippetGenerator {
   constructor({ catalogRepository, scorer, previewBuilder, clock } = {}) {
@@ -150,7 +202,7 @@ class SnippetGenerator {
    * effective year remain unchanged.
    *
    * @param {object} input Validated or validation-compatible generation input.
-   * @returns {Promise<object>} Generated snippets, scoring details, and summary.
+   * @returns {Promise<GenerationResult>} Generated snippets, scoring details, and summary.
    * @throws {Error} If the keyword or matching templates are missing, too few
    * distinct candidates can be built, a result falls below the target minimum,
    * or a normal-range brief produces an out-of-band result.
@@ -204,129 +256,42 @@ class SnippetGenerator {
       count: 5,
     });
 
-    const selectedTitleCandidates = selectCandidates(
+    const selected = selectAndValidateCandidates({
       titleCandidates,
+      metaCandidates,
       titleCount,
       titleProfile,
-    );
-    const selectedMetaCandidates = selectCandidates(
-      metaCandidates,
-      5,
       metaProfile,
-    );
-    const titleFallback = selectedTitleCandidates.some(
-      (candidate) => candidateDistance(candidate.text, titleProfile) > 0,
-    );
-    const metaFallback = selectedMetaCandidates.some(
-      (candidate) => candidateDistance(candidate.text, metaProfile) > 0,
-    );
-    const hasUnderlengthFallback =
-      selectedTitleCandidates.some(
-        (candidate) => candidate.text.length < titleProfile.min,
-      ) ||
-      selectedMetaCandidates.some(
-        (candidate) => candidate.text.length < metaProfile.min,
-      );
-    if (hasUnderlengthFallback) {
-      // Padding with empty prose would satisfy length numerically but produce poor drafts.
-      throw new Error(
-        "The catalog could not satisfy the selected character band's minimum without incomplete padding.",
-      );
-    }
-    if ((titleFallback || metaFallback) && isNormalInput(config)) {
-      // A normal-range miss indicates a catalog regression rather than difficult user input.
-      throw new Error(
-        "The catalog could not satisfy the selected character band for an input inside the documented normal range.",
-      );
-    }
-
-    const titles = selectedTitleCandidates.map((candidate, index) => {
-      const scored = this.scorer.score(candidate.text, {
-        contentType: "title",
-        intent: config.intent,
-        powerWords,
-        primaryKeyword: titleCase(config.primaryKeyword),
-      });
-      const pixelWidth = Math.round(
-        this.previewBuilder.estimatePixelWidth(candidate.text, "title"),
-      );
-      return {
-        id: `title-${index + 1}`,
-        text: candidate.text,
-        charCount: candidate.text.length,
-        pixelWidth,
-        optimizationScore: scored.score,
-        badge: scored.badge,
-        scoreBreakdown: scored.breakdown,
-        matchedPowerWords: scored.matchedPowerWords,
-        schemaHeadline: candidate.text.length <= 110 ? candidate.text : null,
-        truncated: pixelWidth > titlePixelLimit,
-        outsideCharacterTarget:
-          candidate.text.length < titleProfile.min ||
-          candidate.text.length > titleProfile.max,
-        templateId: candidate.template.id,
-        templateStyle: candidate.template.style,
-      };
+      normalInput: isNormalInput(config),
+    });
+    const decorateOptions = {
+      config,
+      powerWords,
+      scorer: this.scorer,
+      previewBuilder: this.previewBuilder,
+    };
+    const titles = buildSnippetResults({
+      ...decorateOptions,
+      candidates: selected.titles,
+      type: "title",
+      profile: titleProfile,
+      pixelLimit: titlePixelLimit,
+    });
+    const metas = buildSnippetResults({
+      ...decorateOptions,
+      candidates: selected.metas,
+      type: "meta",
+      profile: metaProfile,
+      pixelLimit: metaPixelLimit,
     });
 
-    const metas = selectedMetaCandidates.map((candidate, index) => {
-      const scored = this.scorer.score(candidate.text, {
-        contentType: "meta",
-        intent: config.intent,
-        powerWords,
-        primaryKeyword: titleCase(config.primaryKeyword),
-      });
-      const pixelWidth = Math.round(
-        this.previewBuilder.estimatePixelWidth(candidate.text, "meta"),
-      );
-      return {
-        id: `meta-${index + 1}`,
-        text: candidate.text,
-        charCount: candidate.text.length,
-        pixelWidth,
-        optimizationScore: scored.score,
-        badge: scored.badge,
-        scoreBreakdown: scored.breakdown,
-        matchedPowerWords: scored.matchedPowerWords,
-        truncated: pixelWidth > metaPixelLimit,
-        outsideCharacterTarget:
-          candidate.text.length < metaProfile.min ||
-          candidate.text.length > metaProfile.max,
-        templateId: candidate.template.id,
-        templateStyle: candidate.template.style,
-      };
-    });
-
-    const scoreAverage = (items) =>
-      Math.round(
-        items.reduce((total, item) => total + item.optimizationScore, 0) /
-          Math.max(1, items.length),
-      );
-
-    return {
+    return buildGenerationResult({
       config,
       titles,
       metas,
-      schemaHeadlineSuggestions: titles
-        .map((item) => item.schemaHeadline)
-        .filter(Boolean)
-        .slice(0, 3),
-      lengthFallback:
-        titleFallback || metaFallback
-          ? {
-              reason:
-                "User-supplied text is too long for every complete candidate to fit the selected character band.",
-              titles: titleFallback,
-              metas: metaFallback,
-            }
-          : null,
-      summary: {
-        titleCount: titles.length,
-        metaCount: metas.length,
-        avgTitleScore: scoreAverage(titles),
-        avgMetaScore: scoreAverage(metas),
-      },
-    };
+      titleFallback: selected.titleFallback,
+      metaFallback: selected.metaFallback,
+    });
   }
 
   /** Builds an intentionally oversized pool so selection can balance length and variety. */
