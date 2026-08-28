@@ -51,7 +51,6 @@ const LENGTH_PROFILES = {
   "max ctr": { title: { min: 54, max: 60 }, meta: { min: 145, max: 160 } },
 };
 const KNOWN_TERMS = new Map([
-  ["ai", "AI"],
   ["api", "API"],
   ["b2b", "B2B"],
   ["b2c", "B2C"],
