@@ -1,5 +1,5 @@
 # Development retains tooling and source files for the bind-mounted local workflow.
-FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS development
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS development
 WORKDIR /app
 
 COPY --chown=node:node package*.json ./
@@ -15,7 +15,7 @@ FROM development AS migration
 CMD ["npm", "run", "db:setup"]
 
 # Production contains runtime dependencies and application code only.
-FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS production
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
